@@ -48,7 +48,8 @@ import {
   Share2,
   LayoutGrid,
   Mail,
-  Globe
+  Globe,
+  MapPin
 } from 'lucide-react';
 import { CardPreviewNew } from '@/components/card-preview-new';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -164,6 +165,7 @@ interface CardData {
   showAddressMap?: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  googleMapsUrl?: string;
 }
 
 const socialPlatforms = [
@@ -198,6 +200,7 @@ const paymentPlatforms = [
 const navItems = [
   { id: 'avatar', label: 'Avatar', icon: UserCircle },
   { id: 'about', label: 'About', icon: User },
+  { id: 'location', label: 'Location', icon: MapPin },
   { id: 'verified', label: 'Social accounts', icon: Verified },
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'links', label: 'Links', icon: Link2 },
@@ -266,7 +269,7 @@ export const EditorNew: React.FC = () => {
     theme: 'default',
     customCSS: '',
     photos: [],
-    cardOrder: ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages'],
+    cardOrder: ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages', 'location'],
     cardVisibility: {
       contact: true,
       verified: true,
@@ -276,11 +279,13 @@ export const EditorNew: React.FC = () => {
       interests: true,
       gallery: true,
       languages: true,
+      location: true,
     },
     address: '',
     showAddressMap: false,
     latitude: null,
     longitude: null,
+    googleMapsUrl: '',
   });
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showAIConsent, setShowAIConsent] = useState(false);
@@ -512,7 +517,7 @@ export const EditorNew: React.FC = () => {
           videoIntro: incoming.videoIntro ?? '',
           theme: incoming.theme ?? 'default',
           customCSS: incoming.customCSS ?? '',
-          cardOrder: incoming.cardOrder ?? ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages'],
+          cardOrder: incoming.cardOrder ?? ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages', 'location'],
           cardVisibility: incoming.cardVisibility ?? {
             contact: true,
             verified: true,
@@ -522,6 +527,7 @@ export const EditorNew: React.FC = () => {
             interests: true,
             gallery: true,
             languages: true,
+            location: true,
           },
           address: profileData?.address ?? incoming.address ?? '',
           showAddressMap: profileData?.show_address_map ?? incoming.showAddressMap ?? false,
@@ -885,6 +891,74 @@ export const EditorNew: React.FC = () => {
     }
   };
 
+  // Function to parse Google Maps URL and extract coordinates
+  const parseGoogleMapsUrl = (url: string) => {
+    try {
+      // Handle different Google Maps URL formats
+      const urlObj = new URL(url);
+      
+      // Format 1: https://maps.google.com/maps?q=lat,lng
+      if (urlObj.searchParams.has('q')) {
+        const q = urlObj.searchParams.get('q');
+        const coords = q?.match(/(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+        if (coords) {
+          return {
+            latitude: parseFloat(coords[1]),
+            longitude: parseFloat(coords[2])
+          };
+        }
+      }
+      
+      // Format 2: https://www.google.com/maps/@lat,lng,zoom
+      const pathMatch = urlObj.pathname.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if (pathMatch) {
+        return {
+          latitude: parseFloat(pathMatch[1]),
+          longitude: parseFloat(pathMatch[2])
+        };
+      }
+      
+      // Format 3: https://maps.google.com/maps/place/.../@lat,lng
+      const placeMatch = urlObj.pathname.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if (placeMatch) {
+        return {
+          latitude: parseFloat(placeMatch[1]),
+          longitude: parseFloat(placeMatch[2])
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing Google Maps URL:', error);
+    }
+    return null;
+  };
+
+  // Handle Google Maps URL change
+  const handleGoogleMapsUrlChange = (url: string) => {
+    setCardData({ ...cardData, googleMapsUrl: url });
+    
+    if (url) {
+      const coords = parseGoogleMapsUrl(url);
+      if (coords) {
+        setCardData(prev => ({
+          ...prev,
+          googleMapsUrl: url,
+          latitude: coords.latitude,
+          longitude: coords.longitude
+        }));
+        toast({
+          title: "Coordinates extracted!",
+          description: `Latitude: ${coords.latitude}, Longitude: ${coords.longitude}`,
+        });
+      } else {
+        toast({
+          title: "Could not extract coordinates",
+          description: "Please check the Google Maps URL format",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'avatar':
@@ -1010,16 +1084,6 @@ export const EditorNew: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={cardData.location}
-                  onChange={(e) => setCardData({ ...cardData, location: e.target.value })}
-                  placeholder="San Francisco, CA"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="about">About</Label>
                 <Textarea
                   id="about"
@@ -1120,38 +1184,110 @@ export const EditorNew: React.FC = () => {
                 />
               </div>
 
-              {/* Address Section */}
-              <div className="pt-6 border-t">
-                <h3 className="text-lg font-semibold mb-4">Business Address</h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="address">Full Address</Label>
-                    <Input
-                      id="address"
-                      value={cardData.address || ''}
-                      onChange={(e) => setCardData({ ...cardData, address: e.target.value })}
-                      placeholder="Building Number 21, Infocity, Chandaka Industrial Estate, Patia, Odisha, Bhubaneswar, 751024"
-                      className="min-h-[60px]"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your complete business address
-                    </p>
-                  </div>
+            </div>
+          </div>
+        );
 
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Show map on profile</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Display an interactive map with your location
-                      </p>
-                    </div>
-                    <Switch
-                      checked={cardData.showAddressMap || false}
-                      onCheckedChange={(checked) => setCardData({ ...cardData, showAddressMap: checked })}
-                      disabled={!cardData.address}
-                    />
-                  </div>
+      case 'location':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Location</h2>
+              <p className="text-muted-foreground text-sm mb-6">
+                Set your location and address information
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={cardData.location}
+                  onChange={(e) => setCardData({ ...cardData, location: e.target.value })}
+                  placeholder="San Francisco, CA"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  General location (city, state, country)
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="address">Full Address</Label>
+                <Input
+                  id="address"
+                  value={cardData.address || ''}
+                  onChange={(e) => setCardData({ ...cardData, address: e.target.value })}
+                  placeholder="Building Number 21, Infocity, Chandaka Industrial Estate, Patia, Odisha, Bhubaneswar, 751024"
+                  className="min-h-[60px]"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter your complete business address
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={cardData.latitude || ''}
+                    onChange={(e) => setCardData({ ...cardData, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="40.7128"
+                  />
                 </div>
+                <div>
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={cardData.longitude || ''}
+                    onChange={(e) => setCardData({ ...cardData, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="-74.0060"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">Show map on profile</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Display an interactive map with your location
+                  </p>
+                </div>
+                <Switch
+                  checked={cardData.showAddressMap || false}
+                  onCheckedChange={(checked) => setCardData({ ...cardData, showAddressMap: checked })}
+                  disabled={!cardData.address && !cardData.latitude && !cardData.longitude}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="googleMapsUrl">Google Maps URL (Optional)</Label>
+                <Input
+                  id="googleMapsUrl"
+                  type="url"
+                  value={cardData.googleMapsUrl || ''}
+                  onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste a Google Maps URL to automatically extract coordinates
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-2">Location Features</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Enter coordinates manually or use the address</li>
+                  <li>• Paste Google Maps URL to auto-extract coordinates</li>
+                  <li>• Google Maps integration for accurate positioning</li>
+                  <li>• Interactive map display on your profile</li>
+                  <li>• Visitors can open your location in Google Maps</li>
+                </ul>
               </div>
             </div>
           </div>

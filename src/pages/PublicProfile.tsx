@@ -281,13 +281,6 @@ export const PublicProfile: React.FC = () => {
       {/* Profile Content */}
       <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
         <CardPreviewNew cardData={cardData} showAIButton={true} />
-        
-        {cardData.address && (
-          <AddressMapDisplay 
-            address={cardData.address}
-            showMap={cardData.showAddressMap}
-          />
-        )}
       </main>
     </div>
   );

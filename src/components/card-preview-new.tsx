@@ -124,7 +124,8 @@ import {
   TestimonialsSection,
   InterestsSection,
   GallerySection,
-  LanguagesSection
+  LanguagesSection,
+  LocationSection
 } from './card-sections';
 
 export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpenPayment, showAIButton = false }) => {
@@ -217,15 +218,6 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
               {cardData.pronoun && (
                 <span className="text-foreground/70">{cardData.pronoun}</span>
               )}
-              {cardData.pronoun && cardData.location && (
-                <span>·</span>
-              )}
-              {cardData.location && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{cardData.location}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -308,20 +300,12 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
           interests: visibility.interests && <InterestsSection key="interests" cardData={cardData} getSocialIcon={getSocialIcon} />,
           gallery: visibility.gallery && <GallerySection key="gallery" cardData={cardData} getSocialIcon={getSocialIcon} />,
           languages: visibility.languages && <LanguagesSection key="languages" cardData={cardData} getSocialIcon={getSocialIcon} />,
+          location: visibility.location && <LocationSection key="location" cardData={cardData} getSocialIcon={getSocialIcon} />,
         };
 
         return order.map(sectionId => sectionMap[sectionId]).filter(Boolean);
       })()}
 
-      {/* Address Map Display */}
-      {(cardData.address || cardData.latitude || cardData.longitude) && (
-        <AddressMapDisplay 
-          address={cardData.address || ''}
-          showMap={cardData.showAddressMap}
-          latitude={cardData.latitude}
-          longitude={cardData.longitude}
-        />
-      )}
 
       {/* Fallback for old structure - Contact Information Card (only show if cardOrder is not set) */}
       {(!cardData.cardOrder || !Array.isArray(cardData.cardOrder) || cardData.cardOrder.length === 0) && (cardData.email || cardData.phone || cardData.contactForm || cardData.calendar || (showAIButton && cardData.aiEnabled)) && (

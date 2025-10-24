@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Mail, Phone, Globe, Calendar, MessageCircle, 
-  Check, ExternalLink, Award, Heart, ImageIcon 
+  Check, ExternalLink, Award, Heart, ImageIcon, MapPin 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify/react';
@@ -26,6 +26,10 @@ interface CardData {
   photos?: Array<{ url: string; caption?: string }>;
   videoIntro?: string;
   languages: string[];
+  address?: string;
+  showAddressMap?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface SectionProps {
@@ -353,6 +357,67 @@ export const LanguagesSection: React.FC<SectionProps> = ({ cardData }) => {
             {language}
           </Badge>
         ))}
+      </div>
+    </Card>
+  );
+};
+
+export const LocationSection: React.FC<SectionProps> = ({ cardData }) => {
+  if (!cardData.address && !cardData.latitude && !cardData.longitude) return null;
+
+  // Use coordinates if available, otherwise encode address
+  const hasCoordinates = cardData.latitude !== null && cardData.latitude !== undefined && 
+                       cardData.longitude !== null && cardData.longitude !== undefined;
+  
+  const mapEmbedUrl = hasCoordinates
+    ? `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${cardData.latitude},${cardData.longitude}&zoom=15`
+    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(cardData.address || '')}`;
+  
+  const mapUrl = hasCoordinates
+    ? `https://www.google.com/maps/search/?api=1&query=${cardData.latitude},${cardData.longitude}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cardData.address || '')}`;
+
+  return (
+    <Card className="p-6">
+      <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
+        <MapPin className="w-4 h-4 text-primary" />
+        Location
+      </h3>
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
+          <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            {cardData.address && <p className="text-sm text-muted-foreground break-words mb-2">{cardData.address}</p>}
+            {hasCoordinates && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Coordinates: {cardData.latitude}, {cardData.longitude}
+              </p>
+            )}
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline inline-block"
+            >
+              Open in Google Maps →
+            </a>
+          </div>
+        </div>
+
+        {cardData.showAddressMap && (
+          <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border/50">
+            <iframe
+              src={mapEmbedUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Location Map"
+            />
+          </div>
+        )}
       </div>
     </Card>
   );

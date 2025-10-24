@@ -416,8 +416,17 @@ export const LocationSection: React.FC<SectionProps> = ({ cardData }) => {
               referrerPolicy="no-referrer-when-downgrade"
               title="Location Map"
             />
+            {/* Centered pin overlay to indicate exact location */}
+            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full">
+              <MapPin className="w-7 h-7 text-red-500 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]" />
+            </div>
           </div>
         )}
+
+        {/* Note: accuracy disclaimer */}
+        <p className="text-xs text-muted-foreground">
+          the fetched location wont be accurate and the user have to check the location fetched.
+        </p>
       </div>
     </Card>
   );

@@ -7,6 +7,7 @@ interface AddressMapDisplayProps {
   className?: string;
   latitude?: number | null;
   longitude?: number | null;
+  mapUrl?: string;
 }
 
 export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({ 
@@ -14,9 +15,10 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
   showMap = false,
   className = '',
   latitude,
-  longitude
+  longitude,
+  mapUrl
 }) => {
-  if (!address && !latitude && !longitude) return null;
+  if (!address && !latitude && !longitude && !mapUrl) return null;
 
   // Use coordinates if available, otherwise encode address
   const hasCoordinates = latitude !== null && latitude !== undefined && 
@@ -26,9 +28,11 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
     ? `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${latitude},${longitude}&zoom=15`
     : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(address)}`;
   
-  const mapUrl = hasCoordinates
-    ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const mapsLink = mapUrl
+    ? mapUrl
+    : hasCoordinates
+      ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -43,7 +47,7 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
             </p>
           )}
           <a
-            href={mapUrl}
+            href={mapsLink}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-primary hover:underline mt-2 inline-block"

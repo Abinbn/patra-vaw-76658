@@ -49,6 +49,7 @@ import {
 } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
 import { Icon } from '@iconify/react';
+import { AddressMapDisplay } from '@/components/AddressMapDisplay';
 
 interface CardData {
   fullName: string;
@@ -78,6 +79,8 @@ interface CardData {
   videoIntro?: string;
   cardOrder?: string[];
   cardVisibility?: Record<string, boolean>;
+  address?: string;
+  showAddressMap?: boolean;
 }
 
 interface CardPreviewNewProps {
@@ -307,6 +310,14 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
 
         return order.map(sectionId => sectionMap[sectionId]).filter(Boolean);
       })()}
+
+      {/* Address Map Display */}
+      {cardData.address && (
+        <AddressMapDisplay 
+          address={cardData.address}
+          showMap={cardData.showAddressMap}
+        />
+      )}
 
       {/* Fallback for old structure - Contact Information Card (only show if cardOrder is not set) */}
       {(!cardData.cardOrder || !Array.isArray(cardData.cardOrder) || cardData.cardOrder.length === 0) && (cardData.email || cardData.phone || cardData.contactForm || cardData.calendar || (showAIButton && cardData.aiEnabled)) && (

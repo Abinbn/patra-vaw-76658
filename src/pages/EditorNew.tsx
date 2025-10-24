@@ -160,6 +160,8 @@ interface CardData {
   photos: Photo[];
   cardOrder: string[];
   cardVisibility: Record<string, boolean>;
+  address?: string;
+  showAddressMap?: boolean;
 }
 
 const socialPlatforms = [
@@ -273,6 +275,8 @@ export const EditorNew: React.FC = () => {
       gallery: true,
       languages: true,
     },
+    address: '',
+    showAddressMap: false,
   });
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showAIConsent, setShowAIConsent] = useState(false);
@@ -360,6 +364,8 @@ export const EditorNew: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [inputPanelOpen]);
 
+  const [shouldStartTour, setShouldStartTour] = useState(false);
+
   useEffect(() => {
     if (user) {
       fetchExistingCard();
@@ -367,16 +373,19 @@ export const EditorNew: React.FC = () => {
       
       // Show video intro on first visit
       const hasSeenIntro = localStorage.getItem('patra_video_intro_seen');
+      const hasCompletedTour = localStorage.getItem('patra-tour-completed') === 'true';
+      
       if (!hasSeenIntro) {
         // Delay to allow editor to load first
         setTimeout(() => setShowVideoIntro(true), 1000);
+      } else if (!hasCompletedTour) {
+        // If video already seen but tour not completed, start tour immediately
+        setShouldStartTour(true);
       }
     }
   }, [user]);
 
-  // Initialize guided tour for new users
-  const hasCompletedTour = localStorage.getItem('patra-tour-completed') === 'true';
-  const shouldStartTour = user && !hasCompletedTour;
+  // Initialize guided tour - will start only when shouldStartTour is true
   useTour(shouldStartTour);
 
   const fetchAIStatus = async () => {
@@ -438,16 +447,26 @@ export const EditorNew: React.FC = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('digital_cards')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .maybeSingle();
+      // Fetch both digital card and profile data
+      const [cardResult, profileResult] = await Promise.all([
+        supabase
+          .from('digital_cards')
+          .select('*')
+          .eq('owner_user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('address, show_address_map')
+          .eq('user_id', user.id)
+          .maybeSingle()
+      ]);
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (cardResult.error && cardResult.error.code !== 'PGRST116') throw cardResult.error;
 
-      if (data && data.content_json) {
-        const incoming = data.content_json as Partial<CardData>;
+      if (cardResult.data && cardResult.data.content_json) {
+        const incoming = cardResult.data.content_json as Partial<CardData>;
+        const profileData = profileResult.data;
+        
         setCardData((prev) => ({
           ...prev,
           ...incoming,
@@ -489,6 +508,8 @@ export const EditorNew: React.FC = () => {
             gallery: true,
             languages: true,
           },
+          address: profileData?.address ?? incoming.address ?? '',
+          showAddressMap: profileData?.show_address_map ?? incoming.showAddressMap ?? false,
         }));
       }
     } catch (error) {
@@ -567,6 +588,17 @@ export const EditorNew: React.FC = () => {
       }
 
       if (error) throw error;
+
+      // Also update address fields in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          address: cardData.address || null,
+          show_address_map: cardData.showAddressMap || false
+        })
+        .eq('user_id', user.id);
+
+      if (profileError) throw profileError;
 
       if (!silent) {
         toast({
@@ -1069,6 +1101,40 @@ export const EditorNew: React.FC = () => {
                   onChange={(e) => setCardData({ ...cardData, calendar: e.target.value })}
                   placeholder="https://calendly.com/..."
                 />
+              </div>
+
+              {/* Address Section */}
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-semibold mb-4">Business Address</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="address">Full Address</Label>
+                    <Input
+                      id="address"
+                      value={cardData.address || ''}
+                      onChange={(e) => setCardData({ ...cardData, address: e.target.value })}
+                      placeholder="Building Number 21, Infocity, Chandaka Industrial Estate, Patia, Odisha, Bhubaneswar, 751024"
+                      className="min-h-[60px]"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter your complete business address
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Show map on profile</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Display an interactive map with your location
+                      </p>
+                    </div>
+                    <Switch
+                      checked={cardData.showAddressMap || false}
+                      onCheckedChange={(checked) => setCardData({ ...cardData, showAddressMap: checked })}
+                      disabled={!cardData.address}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2446,7 +2512,14 @@ ${cardData.achievements.map(a => `- ${a.title} from ${a.issuer} (${a.date})`).jo
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Video Intro Dialog */}
-      {showVideoIntro && <VideoIntro onClose={() => setShowVideoIntro(false)} />}
+      {showVideoIntro && <VideoIntro onClose={() => {
+        setShowVideoIntro(false);
+        // Start tour after video closes
+        const hasCompletedTour = localStorage.getItem('patra-tour-completed') === 'true';
+        if (!hasCompletedTour) {
+          setShouldStartTour(true);
+        }
+      }} />}
       
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">

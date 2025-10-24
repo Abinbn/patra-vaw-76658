@@ -42,7 +42,6 @@ import {
   Menu
 } from 'lucide-react';
 import { OGMetaEditor } from '@/components/OGMetaEditor';
-import { AddressEditor } from '@/components/AddressEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -795,9 +794,6 @@ export const Settings: React.FC = () => {
                 
                 {/* OG Meta Editor */}
                 {user && <OGMetaEditor userId={user.id} />}
-                
-                {/* Address Editor */}
-                {user && <AddressEditor userId={user.id} />}
                 
                 <Card className="border-border/50 shadow-lg shadow-black/5">
                   <CardHeader>

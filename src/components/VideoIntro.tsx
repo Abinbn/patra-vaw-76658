@@ -13,7 +13,8 @@ export const VideoIntro: React.FC<VideoIntroProps> = ({ onClose }) => {
   const handleClose = () => {
     setOpen(false);
     localStorage.setItem('patra_video_intro_seen', 'true');
-    onClose();
+    // Delay before calling onClose to allow tour to start after 2000ms
+    setTimeout(() => onClose(), 2000);
   };
 
   return (

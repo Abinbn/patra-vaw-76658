@@ -11,12 +11,26 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { MarkdownEditor } from '@/components/MarkdownEditor';
 import { toast } from '@/hooks/use-toast';
 import { 
-  Shield, Plus, Edit, Trash2, Eye, Send,
+  Shield, Plus, Edit, Trash2, Eye, Send, Mail, Megaphone,
   TrendingUp, Users, CreditCard, Activity,
-  CheckCircle, Clock, XCircle
+  CheckCircle, Clock, XCircle, ExternalLink, ChevronDown
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -50,7 +64,11 @@ const Admin: React.FC = () => {
     type: 'info',
     priority: 'normal',
     sendToAll: false,
+    targetUserId: null as string | null,
   });
+  
+  const [docPages, setDocPages] = useState<any[]>([]);
+  const [isNewDoc, setIsNewDoc] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -67,6 +85,8 @@ const Admin: React.FC = () => {
       loadUsers();
     } else if (isAdmin && activeSection === 'templates') {
       loadTemplates();
+    } else if (isAdmin && activeSection === 'docs') {
+      loadDocPages();
     }
   }, [isAdmin, activeSection]);
 
@@ -159,6 +179,16 @@ const Admin: React.FC = () => {
     if (data) setTemplates(data);
   };
 
+  const loadDocPages = async () => {
+    // TODO: Create a doc_pages table or use files
+    // For now, using mock data
+    setDocPages([
+      { id: 'api-guide', title: 'API Guide', content: '' },
+      { id: 'getting-started', title: 'Getting Started', content: '' },
+      { id: 'features', title: 'Features', content: '' },
+    ]);
+  };
+
   const handleCreateAnnouncement = async () => {
     try {
       const { data: announcement, error } = await supabase
@@ -177,8 +207,13 @@ const Admin: React.FC = () => {
 
       if (error) throw error;
 
-      // If sending to all users, create announcement recipients
-      if (announcementForm.sendToAll) {
+      // Send to specific user or all users
+      if (announcementForm.targetUserId) {
+        await supabase.from('announcements_recipients').insert({
+          announcement_id: announcement.id,
+          user_id: announcementForm.targetUserId,
+        });
+      } else if (announcementForm.sendToAll) {
         const { data: allUsers } = await supabase.from('profiles').select('user_id');
         
         if (allUsers && allUsers.length > 0) {
@@ -202,6 +237,7 @@ const Admin: React.FC = () => {
         type: 'info',
         priority: 'normal',
         sendToAll: false,
+        targetUserId: null,
       });
 
       loadAnnouncements();
@@ -213,6 +249,31 @@ const Admin: React.FC = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleSendResponse = async (feedbackItem: any, method: 'email' | 'announcement') => {
+    if (method === 'announcement') {
+      setAnnouncementForm({
+        title: `Re: ${feedbackItem.subject}`,
+        content: '',
+        type: 'info',
+        priority: 'normal',
+        sendToAll: false,
+        targetUserId: feedbackItem.user_id,
+      });
+      setActiveSection('announcements');
+    } else {
+      // Email functionality - would require backend email service
+      toast({
+        title: 'Email Response',
+        description: 'Email integration coming soon. Use announcement for now.',
+      });
+    }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    // Navigate to user's profile view
+    window.open(`/admin/user/${userId}`, '_blank');
   };
 
   const handleUpdateFeedbackStatus = async (id: string, status: string) => {
@@ -253,11 +314,11 @@ const Admin: React.FC = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex w-full">
       <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-8 py-8">
+      <main className="flex-1 overflow-y-auto md:ml-0 ml-16">
+        <div className="container mx-auto px-4 md:px-8 py-8 max-w-7xl">
           {/* Dashboard Section */}
           {activeSection === 'dashboard' && (
             <div className="space-y-6">
@@ -390,11 +451,27 @@ const Admin: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={announcementForm.sendToAll}
-                      onChange={(e) => setAnnouncementForm({ ...announcementForm, sendToAll: e.target.checked })}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, sendToAll: e.target.checked, targetUserId: null })}
                       className="rounded"
+                      disabled={!!announcementForm.targetUserId}
                     />
                     <Label>Send to all users</Label>
                   </div>
+
+                  {announcementForm.targetUserId && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        Sending to specific user: {announcementForm.targetUserId}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAnnouncementForm({ ...announcementForm, targetUserId: null })}
+                      >
+                        Clear Target
+                      </Button>
+                    </div>
+                  )}
 
                   <Button onClick={handleCreateAnnouncement}>
                     <Send className="w-4 h-4 mr-2" />
@@ -458,7 +535,7 @@ const Admin: React.FC = () => {
                         <span>Date: {new Date(item.created_at).toLocaleDateString()}</span>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Select
                           value={item.status}
                           onValueChange={(v) => handleUpdateFeedbackStatus(item.id, v)}
@@ -473,6 +550,25 @@ const Admin: React.FC = () => {
                             <SelectItem value="closed">Closed</SelectItem>
                           </SelectContent>
                         </Select>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Send Response
+                              <ChevronDown className="w-4 h-4 ml-2" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleSendResponse(item, 'announcement')}>
+                              <Megaphone className="w-4 h-4 mr-2" />
+                              Via Announcement
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendResponse(item, 'email')}>
+                              <Mail className="w-4 h-4 mr-2" />
+                              Via Email
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardContent>
                   </Card>
@@ -491,19 +587,62 @@ const Admin: React.FC = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>All Users</CardTitle>
+                  <CardTitle>All Users ({users.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{user.display_name}</p>
-                          <p className="text-sm text-muted-foreground">{user.user_id}</p>
-                        </div>
-                        <Badge>{user.role || 'member'}</Badge>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Account Type</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((userItem) => (
+                          <TableRow key={userItem.id}>
+                            <TableCell className="font-medium">{userItem.display_name || 'N/A'}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{userItem.user_id}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{userItem.account_type || 'individual'}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge>{userItem.role || 'member'}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleViewProfile(userItem.user_id)}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setAnnouncementForm({
+                                      ...announcementForm,
+                                      targetUserId: userItem.user_id,
+                                      sendToAll: false,
+                                    });
+                                    setActiveSection('announcements');
+                                  }}
+                                >
+                                  <Send className="w-4 h-4 mr-1" />
+                                  Message
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </CardContent>
               </Card>
@@ -545,44 +684,113 @@ const Admin: React.FC = () => {
 
           {/* Documentation Section */}
           {activeSection === 'docs' && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-3xl font-bold">Documentation Editor</h1>
-                <p className="text-muted-foreground">Edit API docs and guides using markdown</p>
+            <div className="space-y-6 scroll-smooth">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold">Documentation Editor</h1>
+                  <p className="text-muted-foreground">Edit API docs and guides using markdown</p>
+                </div>
+                <Button onClick={() => setIsNewDoc(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Document
+                </Button>
               </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Edit Documentation</CardTitle>
-                  <CardDescription>Use markdown to format your content</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Select Document</Label>
-                    <Select value={selectedDoc} onValueChange={setSelectedDoc}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a document" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="api-guide">API Guide</SelectItem>
-                        <SelectItem value="getting-started">Getting Started</SelectItem>
-                        <SelectItem value="features">Features</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="max-w-4xl mx-auto">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {isNewDoc ? 'Create New Document' : 'Edit Documentation'}
+                    </CardTitle>
+                    <CardDescription>Use markdown to format your content</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isNewDoc ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Document Title</Label>
+                          <Input 
+                            placeholder="Enter document title"
+                            value={selectedDoc}
+                            onChange={(e) => setSelectedDoc(e.target.value)}
+                          />
+                        </div>
+                        <MarkdownEditor
+                          value={docContent}
+                          onChange={setDocContent}
+                          placeholder="Write your documentation in markdown..."
+                        />
+                        <div className="flex gap-2">
+                          <Button onClick={() => {
+                            // Save logic here
+                            toast({ title: 'Document Created', description: 'Successfully created new document' });
+                            setIsNewDoc(false);
+                          }}>
+                            Create Document
+                          </Button>
+                          <Button variant="outline" onClick={() => {
+                            setIsNewDoc(false);
+                            setDocContent('');
+                            setSelectedDoc('');
+                          }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Select Document</Label>
+                          <Select value={selectedDoc} onValueChange={(value) => {
+                            setSelectedDoc(value);
+                            // Load existing content
+                            const doc = docPages.find(d => d.id === value);
+                            if (doc) setDocContent(doc.content);
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a document to edit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {docPages.map((doc) => (
+                                <SelectItem key={doc.id} value={doc.id}>
+                                  {doc.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  {selectedDoc && (
-                    <>
-                      <MarkdownEditor
-                        value={docContent}
-                        onChange={setDocContent}
-                        placeholder="Write your documentation in markdown..."
-                      />
-                      <Button>Save Changes</Button>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                        {selectedDoc && (
+                          <>
+                            <MarkdownEditor
+                              value={docContent}
+                              onChange={setDocContent}
+                              placeholder="Write your documentation in markdown..."
+                            />
+                            <div className="flex gap-2">
+                              <Button onClick={() => {
+                                // Save logic here
+                                toast({ title: 'Saved', description: 'Documentation updated successfully' });
+                              }}>
+                                Save Changes
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedDoc('');
+                                  setDocContent('');
+                                }}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 

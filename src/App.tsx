@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import { Auth } from "./pages/Auth";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
-import { Dashboard } from "./pages/Dashboard";
+import { DashboardRouter } from "./pages/DashboardRouter";
 import { OnboardingNew } from "./pages/OnboardingNew";
 import { Analytics } from "./pages/Analytics";
 import { EditorNew } from "./pages/EditorNew";
@@ -52,7 +52,7 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <DashboardRouter />
                 </ProtectedRoute>
               }
             />

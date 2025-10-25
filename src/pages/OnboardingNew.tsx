@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { 
   ChevronRight, ChevronLeft, Users, Building2, User, AlertCircle,
-  Brain, Wand2, Palette, Sparkles, Check, CreditCard, MapPin
+  Brain, Wand2, Palette, Sparkles, Check, CreditCard, MapPin, Info
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 type AccountType = 'individual' | 'company' | null;
 
@@ -39,6 +40,11 @@ interface OnboardingData {
     device: string;
     ip: string;
   };
+  // Company-specific fields
+  company_name: string;
+  company_domain: string;
+  termsAccepted: boolean;
+  verificationPaid: boolean;
 }
 
 const aiLoadingSteps = [
@@ -59,8 +65,8 @@ export const OnboardingNew: React.FC = () => {
   const [aiLoadingStep, setAiLoadingStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
     accountType: null,
-    display_name: '',
-    phone: '',
+    display_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+    phone: user?.user_metadata?.phone || '',
     email: user?.email || '',
     age: '',
     locationConsent: false,
@@ -69,12 +75,21 @@ export const OnboardingNew: React.FC = () => {
       browser: '',
       device: '',
       ip: ''
-    }
+    },
+    company_name: '',
+    company_domain: '',
+    termsAccepted: false,
+    verificationPaid: false,
   });
 
   useEffect(() => {
     if (user?.email) {
-      setData(prev => ({ ...prev, email: user.email! }));
+      setData(prev => ({ 
+        ...prev, 
+        email: user.email!,
+        display_name: prev.display_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
+        phone: prev.phone || user.user_metadata?.phone || '',
+      }));
     }
     // Collect device info
     collectDeviceInfo();
@@ -161,12 +176,6 @@ export const OnboardingNew: React.FC = () => {
   const handleCompanyConfirm = () => {
     setData({ ...data, accountType: 'company' });
     setShowCompanyWarning(false);
-    // For companies, they need to go through payment - redirect to a payment page or show payment form
-    toast({
-      title: "Company Account",
-      description: "Please complete verification payment of ₹20",
-      variant: "default"
-    });
     setCurrentStep(1);
   };
 
@@ -180,27 +189,59 @@ export const OnboardingNew: React.FC = () => {
     if (!user) return;
 
     try {
+      // Get profile ID first
+      const { data: profileData, error: profileFetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileFetchError) throw profileFetchError;
+
+      const updateData: any = {
+        display_name: data.display_name,
+        phone: data.phone || null,
+        age: data.age ? parseInt(data.age) : null,
+        account_type: data.accountType,
+        location_coordinates: data.locationCoords ? `(${data.locationCoords.lat},${data.locationCoords.lng})` : null,
+        device_info: data.deviceInfo,
+        onboarding_completed: true,
+      };
+
+      // Company-specific fields
+      if (data.accountType === 'company') {
+        const inviteCode = await supabase.rpc('generate_invite_code');
+        
+        updateData.company_name = data.company_name;
+        updateData.company_domain = data.company_domain || null;
+        updateData.invite_code = inviteCode.data;
+        updateData.terms_accepted_at = new Date().toISOString();
+        updateData.payment_due_date = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours from now
+        
+        // Create verification payment record
+        await supabase.from('company_payments').insert({
+          company_profile_id: profileData.id,
+          payment_type: 'verification',
+          amount: 20,
+          status: 'pending',
+          due_date: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        });
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: data.display_name,
-          phone: data.phone || null,
-          age: data.age ? parseInt(data.age) : null,
-          account_type: data.accountType,
-          location_coordinates: data.locationCoords ? `(${data.locationCoords.lat},${data.locationCoords.lng})` : null,
-          device_info: data.deviceInfo,
-          onboarding_completed: true,
-        })
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
       toast({
         title: "Welcome to Patra!",
-        description: "Your profile has been set up successfully.",
+        description: `Your ${data.accountType} account has been set up successfully.`,
       });
 
-      navigate('/editor');
+      // Redirect based on account type
+      navigate(data.accountType === 'company' ? '/dashboard' : '/editor');
     } catch (error: any) {
       console.error('Error completing onboarding:', error);
       toast({
@@ -215,7 +256,13 @@ export const OnboardingNew: React.FC = () => {
 
   const isStepValid = () => {
     if (currentStep === 0) return data.accountType !== null;
-    if (currentStep === 1) return data.display_name.trim() !== '';
+    if (currentStep === 1) {
+      if (data.accountType === 'individual') {
+        return data.display_name.trim() !== '';
+      } else {
+        return data.display_name.trim() !== '' && data.company_name.trim() !== '' && data.termsAccepted;
+      }
+    }
     return true;
   };
 
@@ -424,11 +471,9 @@ export const OnboardingNew: React.FC = () => {
                         We'll capture your device location to help personalize your experience
                       </p>
                       {data.locationCoords && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
                           <MapPin className="w-3 h-3" />
-                          <span>
-                            {data.locationCoords.lat.toFixed(6)}, {data.locationCoords.lng.toFixed(6)}
-                          </span>
+                          <span>Location captured successfully</span>
                         </div>
                       )}
                     </div>
@@ -470,32 +515,131 @@ export const OnboardingNew: React.FC = () => {
                     <Building2 className="w-10 h-10 text-white" />
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900 mb-2">Company Account Setup</h2>
-                  <p className="text-slate-600">Complete verification to activate</p>
+                  <p className="text-slate-600">Complete your company information</p>
                 </div>
 
-                <div className="p-6 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-slate-900 mb-2">Verification Payment Required</h4>
-                      <p className="text-sm text-slate-600 mb-3">
-                        Company accounts require a one-time verification fee of ₹20. Your account will be activated within 1-2 hours after payment verification.
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_admin_name">
+                      Your Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="company_admin_name"
+                      value={data.display_name}
+                      onChange={(e) => setData({ ...data, display_name: e.target.value })}
+                      placeholder="Enter your full name"
+                      className="h-12"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">
+                      Company Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="company_name"
+                      value={data.company_name}
+                      onChange={(e) => setData({ ...data, company_name: e.target.value })}
+                      placeholder="Enter company name"
+                      className="h-12"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="company_domain">Company Domain (Optional)</Label>
+                    <Input
+                      id="company_domain"
+                      value={data.company_domain}
+                      onChange={(e) => setData({ ...data, company_domain: e.target.value })}
+                      placeholder="example.com"
+                      className="h-12"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="company_email">Email</Label>
+                    <Input
+                      id="company_email"
+                      value={data.email}
+                      disabled
+                      className="h-12 bg-muted"
+                    />
+                  </div>
+
+                  <div className="p-6 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-900 mb-2">Verification Payment Required</h4>
+                        <p className="text-sm text-slate-600 mb-3">
+                          Company accounts require a one-time verification fee of ₹20. Your account will be activated within 1-2 hours after payment.
+                        </p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Checkbox
+                            id="payment-confirm"
+                            checked={data.verificationPaid}
+                            onCheckedChange={(checked) => setData({ ...data, verificationPaid: checked as boolean })}
+                          />
+                          <Label htmlFor="payment-confirm" className="text-sm cursor-pointer">
+                            I have completed the payment of ₹20
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                      <div className="text-sm text-slate-700 space-y-2">
+                        <p className="font-medium">Company Account Features:</p>
+                        <ul className="space-y-1 ml-4 list-disc text-xs">
+                          <li>Create digital IDs for employees in bulk</li>
+                          <li>Up to 5 Board of Directors cards (free)</li>
+                          <li>Unique invite code for employees</li>
+                          <li>Customizable data collection parameters</li>
+                          <li>Company-branded templates</li>
+                          <li>₹2 per employee invite (payable within 2 months)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-900/20 rounded-lg border">
+                    <Checkbox
+                      id="terms-accept"
+                      checked={data.termsAccepted}
+                      onCheckedChange={(checked) => setData({ ...data, termsAccepted: checked as boolean })}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="terms-accept" className="text-sm font-medium cursor-pointer">
+                        I accept the Terms & Conditions and Data Handling Consent
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        By checking this, you agree to our terms of service and data privacy policy. Company accounts cannot be converted to individual accounts.
                       </p>
-                      <Button className="bg-orange-600 hover:bg-orange-700">
-                        Pay ₹20 & Verify
-                      </Button>
                     </div>
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep(0)}
-                  className="w-full"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back to Account Selection
-                </Button>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(0)}
+                    className="flex-1"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleComplete}
+                    disabled={!isStepValid() || loading}
+                    className="flex-1"
+                  >
+                    Complete Setup
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -504,43 +648,63 @@ export const OnboardingNew: React.FC = () => {
 
       {/* Company Warning Dialog */}
       <AlertDialog open={showCompanyWarning} onOpenChange={setShowCompanyWarning}>
-        <AlertDialogContent className="max-w-2xl">
+        <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-xl">
               <AlertCircle className="w-6 h-6 text-orange-600" />
-              Company Account Information
+              Company Account - Important Information
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-4 text-left">
               <p className="text-base">
-                You're about to create a <strong>Company Account</strong>. Please read this carefully:
+                You're about to create a <strong>Company Account</strong>. This account type is designed for businesses and organizations. Please read carefully:
               </p>
               
-              <div className="bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800 space-y-2">
-                <h4 className="font-semibold text-slate-900">⚠️ Important Notes:</h4>
-                <ul className="text-sm space-y-1 list-disc list-inside text-slate-700">
-                  <li>Company accounts <strong>cannot be changed</strong> to individual accounts</li>
-                  <li>Verification fee: <strong>₹20</strong> (one-time, non-refundable)</li>
-                  <li>Account activation: <strong>1-2 hours</strong> after verification</li>
-                  <li>Must have at least <strong>1 employee</strong> (excluding directors)</li>
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
+                <h4 className="font-semibold text-slate-900 text-base">What is a Company Account?</h4>
+                <p className="text-sm text-slate-700">
+                  The company account is designed for creating digital ID cards and profiles for employees in large numbers. Perfect for organizations that need:
+                </p>
+                <ul className="text-sm space-y-1 list-disc list-inside text-slate-700 ml-2">
+                  <li>Bulk employee ID card creation</li>
+                  <li>Centralized employee profile management</li>
+                  <li>Request printing services for physical ID cards</li>
+                  <li>Specialized dashboard tailored for HR/Admin teams</li>
+                  <li>Board of Directors cards (up to 5 members included)</li>
                 </ul>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                <h4 className="font-semibold text-slate-900">✨ Company Features:</h4>
+              <div className="bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800 space-y-2">
+                <h4 className="font-semibold text-slate-900">⚠️ Critical Requirements:</h4>
                 <ul className="text-sm space-y-1 list-disc list-inside text-slate-700">
-                  <li>Create ID cards for multiple employees</li>
-                  <li>Specialized dashboard for employee management</li>
-                  <li>Bulk card printing requests</li>
-                  <li>Board of Directors cards (up to 3 members)</li>
-                  <li>Centralized profile management</li>
+                  <li>Company accounts <strong>CANNOT be changed</strong> to individual accounts</li>
+                  <li><strong>Verification fee: ₹20</strong> (required during account creation)</li>
+                  <li>Account will be <strong>active within 1-2 hours</strong> after payment verification</li>
+                  <li>Must <strong>verify company status</strong> - individual users cannot use this</li>
+                  <li><strong>Employee invite fee: ₹2 per employee</strong> (payable within 2 months)</li>
                 </ul>
               </div>
+
+              <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800 space-y-2">
+                <h4 className="font-semibold text-slate-900">✨ Company Account Benefits:</h4>
+                <ul className="text-sm space-y-1 list-disc list-inside text-slate-700">
+                  <li>Create up to 5 Board of Directors cards (FREE)</li>
+                  <li>Generate unique invite codes for employees</li>
+                  <li>Customize data collection parameters per employee</li>
+                  <li>Access specialized company dashboard</li>
+                  <li>Company-branded templates and designs</li>
+                  <li>Manage all employee cards from one place</li>
+                </ul>
+              </div>
+
+              <p className="text-sm text-slate-600 italic">
+                💡 If you're an individual user or freelancer, please choose the "Individual" account type instead.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleCompanyConfirm} className="bg-blue-600 hover:bg-blue-700">
-              I Understand, Continue
+              I Understand & Accept
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

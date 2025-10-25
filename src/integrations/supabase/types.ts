@@ -251,6 +251,56 @@ export type Database = {
         }
         Relationships: []
       }
+      company_payments: {
+        Row: {
+          amount: number
+          company_profile_id: string
+          created_at: string
+          currency: string
+          due_date: string | null
+          employee_count: number | null
+          id: string
+          paid_at: string | null
+          payment_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          company_profile_id: string
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          employee_count?: number | null
+          id?: string
+          paid_at?: string | null
+          payment_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_profile_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          employee_count?: number | null
+          id?: string
+          paid_at?: string | null
+          payment_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_payments_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digital_cards: {
         Row: {
           approved_at: string | null
@@ -392,6 +442,57 @@ export type Database = {
         }
         Relationships: []
       }
+      invited_employees: {
+        Row: {
+          company_profile_id: string
+          data_submitted: Json | null
+          employee_profile_id: string | null
+          employee_user_id: string | null
+          id: string
+          invite_code: string
+          invited_at: string
+          joined_at: string | null
+          status: string
+        }
+        Insert: {
+          company_profile_id: string
+          data_submitted?: Json | null
+          employee_profile_id?: string | null
+          employee_user_id?: string | null
+          id?: string
+          invite_code: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+        }
+        Update: {
+          company_profile_id?: string
+          data_submitted?: Json | null
+          employee_profile_id?: string | null
+          employee_user_id?: string | null
+          id?: string
+          invite_code?: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invited_employees_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invited_employees_employee_profile_id_fkey"
+            columns: ["employee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string | null
@@ -401,20 +502,29 @@ export type Database = {
           ai_enabled: boolean | null
           avatar_url: string | null
           bio: string | null
+          board_member_count: number | null
+          company_domain: string | null
           company_id: string | null
+          company_logo_url: string | null
+          company_name: string | null
           company_verification_paid_at: string | null
           company_verified: boolean | null
           created_at: string
           device_info: Json | null
           display_name: string | null
+          employee_invite_count: number | null
           id: string
+          invite_code: string | null
+          invite_parameters: Json | null
           job_title: string | null
           location_coordinates: unknown
           onboarding_completed: boolean | null
+          payment_due_date: string | null
           phone: string | null
           photo_count: number | null
           role: Database["public"]["Enums"]["user_role"]
           show_address_map: boolean | null
+          terms_accepted_at: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -428,20 +538,29 @@ export type Database = {
           ai_enabled?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          board_member_count?: number | null
+          company_domain?: string | null
           company_id?: string | null
+          company_logo_url?: string | null
+          company_name?: string | null
           company_verification_paid_at?: string | null
           company_verified?: boolean | null
           created_at?: string
           device_info?: Json | null
           display_name?: string | null
+          employee_invite_count?: number | null
           id?: string
+          invite_code?: string | null
+          invite_parameters?: Json | null
           job_title?: string | null
           location_coordinates?: unknown
           onboarding_completed?: boolean | null
+          payment_due_date?: string | null
           phone?: string | null
           photo_count?: number | null
           role?: Database["public"]["Enums"]["user_role"]
           show_address_map?: boolean | null
+          terms_accepted_at?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -455,20 +574,29 @@ export type Database = {
           ai_enabled?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          board_member_count?: number | null
+          company_domain?: string | null
           company_id?: string | null
+          company_logo_url?: string | null
+          company_name?: string | null
           company_verification_paid_at?: string | null
           company_verified?: boolean | null
           created_at?: string
           device_info?: Json | null
           display_name?: string | null
+          employee_invite_count?: number | null
           id?: string
+          invite_code?: string | null
+          invite_parameters?: Json | null
           job_title?: string | null
           location_coordinates?: unknown
           onboarding_completed?: boolean | null
+          payment_due_date?: string | null
           phone?: string | null
           photo_count?: number | null
           role?: Database["public"]["Enums"]["user_role"]
           show_address_map?: boolean | null
+          terms_accepted_at?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
@@ -627,6 +755,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

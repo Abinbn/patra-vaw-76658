@@ -21,6 +21,7 @@ import { Settings } from "./pages/Settings";
 import { Docs } from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 import AIChat from "./pages/AIChat";
+import { Templates } from "./pages/Templates";
 // import PrintCard from "./pages/Printcard";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <Templates />
                 </ProtectedRoute>
               }
             />

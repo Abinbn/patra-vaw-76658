@@ -78,7 +78,17 @@ interface CardData {
   photos?: Array<{ url: string; caption?: string }>;
   videoIntro?: string;
   cardOrder?: string[];
-  cardVisibility?: Record<string, boolean>;
+  cardVisibility?: {
+    contact: boolean;
+    verified: boolean;
+    links: boolean;
+    achievements: boolean;
+    testimonials: boolean;
+    interests: boolean;
+    gallery: boolean;
+    languages: boolean;
+    location: boolean;
+  };
   address?: string;
   showAddressMap?: boolean;
   latitude?: number | null;
@@ -286,6 +296,7 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
           interests: true,
           gallery: true,
           languages: true,
+          location: true,
         };
         
         const order = cardData.cardOrder || defaultOrder;

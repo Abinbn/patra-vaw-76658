@@ -49,6 +49,7 @@ interface CardData {
     interests: boolean;
     gallery: boolean;
     languages: boolean;
+    location: boolean;
   };
   address?: string;
   showAddressMap?: boolean;

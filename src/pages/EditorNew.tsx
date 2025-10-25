@@ -161,7 +161,17 @@ interface CardData {
   customCSS?: string;
   photos: Photo[];
   cardOrder: string[];
-  cardVisibility: Record<string, boolean>;
+  cardVisibility: {
+    contact: boolean;
+    verified: boolean;
+    links: boolean;
+    achievements: boolean;
+    testimonials: boolean;
+    interests: boolean;
+    gallery: boolean;
+    languages: boolean;
+    location: boolean;
+  };
   address?: string;
   showAddressMap?: boolean;
   latitude?: number | null;
@@ -504,7 +514,7 @@ export const EditorNew: React.FC = () => {
           gallery: true,
           languages: true,
           location: true,
-        } as Record<string, boolean>;
+        };
 
         const computedVisibility = incoming.cardVisibility
           ? { ...defaultVisibility, ...incoming.cardVisibility }
@@ -2389,8 +2399,29 @@ export const EditorNew: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold mb-2">Design</h2>
               <p className="text-muted-foreground text-sm mb-6">
-                Customize your card appearance
+                Customize your card appearance with templates and themes
               </p>
+            </div>
+
+            {/* Template Browse Button */}
+            <div className="p-4 border border-border rounded-lg bg-gradient-to-r from-primary/5 to-accent/5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold">Choose a Template</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Browse our gallery of professional templates
+                  </p>
+                </div>
+                <Palette className="w-8 h-8 text-primary" />
+              </div>
+              <Button 
+                onClick={() => navigate('/templates')}
+                className="w-full"
+                variant="outline"
+              >
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                Browse Templates
+              </Button>
             </div>
 
             {/* Theme Selection */}

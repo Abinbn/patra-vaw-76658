@@ -14,6 +14,7 @@ import {
   Eye, Edit3, Copy, RefreshCw, Send, AlertCircle
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Profile {
   id: string;
@@ -23,7 +24,7 @@ interface Profile {
   account_type: string;
   board_member_count: number;
   employee_invite_count: number;
-  invite_parameters: string[];
+  invite_parameters: Json;
   payment_due_date: string | null;
 }
 

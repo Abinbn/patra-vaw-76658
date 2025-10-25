@@ -144,18 +144,7 @@ export const DocsLayout: React.FC<DocsLayoutProps> = ({
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">Patra Documentation</h1>
-              <p className="text-sm text-muted-foreground">Complete guide to using Patra</p>
-            </div>
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Left side */}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild className="lg:hidden">
                 <Button variant="outline" size="icon">
@@ -168,6 +157,17 @@ export const DocsLayout: React.FC<DocsLayoutProps> = ({
                 </ScrollArea>
               </SheetContent>
             </Sheet>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold">Patra Documentation</h1>
+              <p className="text-sm text-muted-foreground">Complete guide to using Patra</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
@@ -183,8 +183,8 @@ export const DocsLayout: React.FC<DocsLayoutProps> = ({
             </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 max-w-3xl">
+          {/* Main Content - Centered */}
+          <main className="flex-1 max-w-4xl mx-auto">
             {children}
           </main>
         </div>

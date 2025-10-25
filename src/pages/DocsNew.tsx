@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DocsLayout } from '@/components/DocsLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   TreePine, 
   Leaf,
@@ -26,11 +27,85 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
+// Default static sections
+const defaultSections = [
+  'introduction',
+  'quick-start',
+  'why-patra',
+  'avatar',
+  'username',
+  'templates',
+  'custom-css',
+  'banner'
+];
+
 export const DocsNew: React.FC = () => {
   const [activeSection, setActiveSection] = useState('introduction');
+  const [customDocs, setCustomDocs] = useState<any[]>([]);
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const renderContent = () => {
-    switch (activeSection) {
+  useEffect(() => {
+    loadCustomDocs();
+  }, []);
+
+  useEffect(() => {
+    // Set up intersection observer for infinite scroll
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const sectionId = entry.target.getAttribute('data-section-id');
+            if (sectionId) {
+              setActiveSection(sectionId);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.3,
+        rootMargin: '-100px 0px -60% 0px'
+      }
+    );
+
+    // Observe all sections
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref && observerRef.current) {
+        observerRef.current.observe(ref);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [customDocs]);
+
+  const loadCustomDocs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('documentation_pages')
+        .select('*')
+        .eq('is_published', true)
+        .order('order_index', { ascending: true });
+      
+      if (error) throw error;
+      if (data) setCustomDocs(data);
+    } catch (error) {
+      console.error('Error loading documentation:', error);
+    }
+  };
+
+  const handleSectionChange = (sectionId: string) => {
+    const element = sectionRefs.current[sectionId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const renderDefaultContent = (sectionId: string) => {
+    switch (sectionId) {
       case 'introduction':
         return (
           <div className="space-y-6">
@@ -373,8 +448,44 @@ export const DocsNew: React.FC = () => {
   };
 
   return (
-    <DocsLayout activeSection={activeSection} onSectionChange={setActiveSection}>
-      {renderContent()}
+    <DocsLayout activeSection={activeSection} onSectionChange={handleSectionChange}>
+      <div className="space-y-24">
+        {/* Render default sections with infinite scroll */}
+        {defaultSections.map((sectionId) => (
+          <section
+            key={sectionId}
+            ref={(el) => (sectionRefs.current[sectionId] = el)}
+            data-section-id={sectionId}
+            className="scroll-mt-24"
+          >
+            {renderDefaultContent(sectionId)}
+          </section>
+        ))}
+
+        {/* Render custom documentation from database */}
+        {customDocs.map((doc) => (
+          <section
+            key={doc.page_id}
+            ref={(el) => (sectionRefs.current[doc.page_id] = el)}
+            data-section-id={doc.page_id}
+            className="scroll-mt-24"
+          >
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-4xl font-bold mb-4">{doc.title}</h1>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div 
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: doc.content }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        ))}
+      </div>
     </DocsLayout>
   );
 };

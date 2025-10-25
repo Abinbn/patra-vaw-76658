@@ -180,13 +180,22 @@ const Admin: React.FC = () => {
   };
 
   const loadDocPages = async () => {
-    // TODO: Create a doc_pages table or use files
-    // For now, using mock data
-    setDocPages([
-      { id: 'api-guide', title: 'API Guide', content: '' },
-      { id: 'getting-started', title: 'Getting Started', content: '' },
-      { id: 'features', title: 'Features', content: '' },
-    ]);
+    try {
+      const { data, error } = await supabase
+        .from('documentation_pages')
+        .select('*')
+        .order('order_index', { ascending: true });
+      
+      if (error) throw error;
+      if (data) setDocPages(data);
+    } catch (error) {
+      console.error('Error loading documentation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load documentation pages',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCreateAnnouncement = async () => {
@@ -721,10 +730,33 @@ const Admin: React.FC = () => {
                           placeholder="Write your documentation in markdown..."
                         />
                         <div className="flex gap-2">
-                          <Button onClick={() => {
-                            // Save logic here
-                            toast({ title: 'Document Created', description: 'Successfully created new document' });
-                            setIsNewDoc(false);
+                          <Button onClick={async () => {
+                            try {
+                              const pageId = selectedDoc.toLowerCase().replace(/\s+/g, '-');
+                              const { error } = await supabase
+                                .from('documentation_pages')
+                                .insert({
+                                  page_id: pageId,
+                                  title: selectedDoc,
+                                  content: docContent,
+                                  is_published: true,
+                                  created_by: user?.id,
+                                });
+                              
+                              if (error) throw error;
+                              
+                              toast({ title: 'Document Created', description: 'Successfully created new document' });
+                              setIsNewDoc(false);
+                              setDocContent('');
+                              setSelectedDoc('');
+                              loadDocPages();
+                            } catch (error: any) {
+                              toast({ 
+                                title: 'Error', 
+                                description: error.message || 'Failed to create document',
+                                variant: 'destructive' 
+                              });
+                            }
                           }}>
                             Create Document
                           </Button>
@@ -768,9 +800,26 @@ const Admin: React.FC = () => {
                               placeholder="Write your documentation in markdown..."
                             />
                             <div className="flex gap-2">
-                              <Button onClick={() => {
-                                // Save logic here
-                                toast({ title: 'Saved', description: 'Documentation updated successfully' });
+                              <Button onClick={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('documentation_pages')
+                                    .update({
+                                      content: docContent,
+                                    })
+                                    .eq('id', selectedDoc);
+                                  
+                                  if (error) throw error;
+                                  
+                                  toast({ title: 'Saved', description: 'Documentation updated successfully' });
+                                  loadDocPages();
+                                } catch (error: any) {
+                                  toast({
+                                    title: 'Error',
+                                    description: error.message || 'Failed to update documentation',
+                                    variant: 'destructive',
+                                  });
+                                }
                               }}>
                                 Save Changes
                               </Button>

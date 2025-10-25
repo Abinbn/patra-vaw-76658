@@ -571,6 +571,8 @@ export const EditorNew: React.FC = () => {
           videoIntro: incoming.videoIntro ?? '',
           theme: incoming.theme ?? 'default',
           customCSS: incoming.customCSS ?? '',
+          bannerType: incoming.bannerType ?? 'gradient',
+          bannerValue: incoming.bannerValue ?? '',
           cardOrder: computedOrder,
           cardVisibility: computedVisibility,
           address: profileData?.address ?? incoming.address ?? '',
@@ -626,9 +628,18 @@ export const EditorNew: React.FC = () => {
         .eq('owner_user_id', user.id)
         .maybeSingle();
 
+      // Ensure banner settings and custom CSS are included
+      const contentToSave = {
+        ...cardData,
+        bannerType: cardData.bannerType || 'gradient',
+        bannerValue: cardData.bannerValue || '',
+        customCSS: cardData.customCSS || '',
+        theme: cardData.theme || 'default',
+      };
+
       const payload: any = {
         title: cardData.fullName || 'My Card',
-        content_json: cardData,
+        content_json: contentToSave,
         is_active: true,
         is_approved: true,
       };

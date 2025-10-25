@@ -388,6 +388,45 @@ export type Database = {
           },
         ]
       }
+      documentation_pages: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean | null
+          order_index: number | null
+          page_id: string
+          parent_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          page_id: string
+          parent_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          page_id?: string
+          parent_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback_submissions: {
         Row: {
           admin_response: string | null

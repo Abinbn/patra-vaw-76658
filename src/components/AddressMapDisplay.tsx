@@ -23,7 +23,7 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const [pinPosition, setPinPosition] = useState<{ x: number; y: number; visible: boolean; angle: number } | null>(null);
+  const [edgeIndicator, setEdgeIndicator] = useState<{ x: number; y: number; angle: number } | null>(null);
 
   if (!address && !latitude && !longitude && !mapUrl) return null;
 
@@ -39,114 +39,161 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
   useEffect(() => {
     if (!showMap || !hasCoordinates || !mapContainerRef.current) return;
 
-    // Initialize map
+    // Initialize map only once
     if (!mapRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [latitude!, longitude!],
         zoom: 15,
         zoomControl: true,
-        attributionControl: false
+        attributionControl: true
       });
 
+      // Add tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
       mapRef.current = map;
 
-      // Create custom marker icon
+      // Create marker icon that stays at the user's coordinates
       const customIcon = L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="
-          width: 32px;
-          height: 32px;
-          background: hsl(var(--primary));
-          border: 3px solid white;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        ">
+        className: 'custom-map-marker',
+        html: `
           <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-          "></div>
-        </div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32]
+            position: relative;
+            width: 40px;
+            height: 40px;
+          ">
+            <div style="
+              position: absolute;
+              bottom: 0;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 30px;
+              height: 30px;
+              background: #ef4444;
+              border: 3px solid white;
+              border-radius: 50% 50% 50% 0;
+              transform: translateX(-50%) rotate(-45deg);
+              box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            ">
+              <div style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(45deg);
+                width: 10px;
+                height: 10px;
+                background: white;
+                border-radius: 50%;
+              "></div>
+            </div>
+          </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
       });
 
-      markerRef.current = L.marker([latitude!, longitude!], { icon: customIcon }).addTo(map);
+      // Add marker at the user's location - this marker will STAY at these coordinates
+      markerRef.current = L.marker([latitude!, longitude!], { 
+        icon: customIcon
+      }).addTo(map);
 
-      // Update waypoint position on map move
-      const updateWaypoint = () => {
+      // Add popup to marker
+      if (address) {
+        markerRef.current.bindPopup(address);
+      }
+
+      // Function to check if marker is visible and show edge indicator if not
+      const updateEdgeIndicator = () => {
         if (!mapRef.current || !latitude || !longitude) return;
 
-        const targetLatLng = L.latLng(latitude, longitude);
-        const point = mapRef.current.latLngToContainerPoint(targetLatLng);
-        const bounds = mapRef.current.getContainer().getBoundingClientRect();
+        const userLatLng = L.latLng(latitude, longitude);
+        const bounds = mapRef.current.getBounds();
         
-        const margin = 40;
-        const isVisible = 
-          point.x >= margin && 
-          point.x <= bounds.width - margin && 
-          point.y >= margin && 
-          point.y <= bounds.height - margin;
+        // Check if user location is within visible map bounds
+        const isVisible = bounds.contains(userLatLng);
 
         if (isVisible) {
-          setPinPosition({ x: point.x, y: point.y, visible: true, angle: 0 });
+          // User location is visible, hide edge indicator
+          setEdgeIndicator(null);
         } else {
-          // Calculate position at border
-          const centerX = bounds.width / 2;
-          const centerY = bounds.height / 2;
-          const dx = point.x - centerX;
-          const dy = point.y - centerY;
+          // User location is off-screen, show edge indicator
+          const containerPoint = mapRef.current.latLngToContainerPoint(userLatLng);
+          const container = mapRef.current.getContainer();
+          const containerRect = container.getBoundingClientRect();
+          
+          const centerX = containerRect.width / 2;
+          const centerY = containerRect.height / 2;
+          
+          // Calculate direction from center to user location
+          const dx = containerPoint.x - centerX;
+          const dy = containerPoint.y - centerY;
           const angle = Math.atan2(dy, dx);
           
-          // Calculate intersection with border
-          let borderX = centerX;
-          let borderY = centerY;
+          // Calculate position at edge of map
+          const margin = 50;
+          const halfWidth = containerRect.width / 2 - margin;
+          const halfHeight = containerRect.height / 2 - margin;
+          
+          let edgeX = centerX;
+          let edgeY = centerY;
           
           const slope = dy / dx;
-          const halfWidth = bounds.width / 2 - margin;
-          const halfHeight = bounds.height / 2 - margin;
           
           if (Math.abs(dx) * halfHeight > Math.abs(dy) * halfWidth) {
-            // Hit left or right border
-            borderX = dx > 0 ? bounds.width - margin : margin;
-            borderY = centerY + slope * (borderX - centerX);
+            // Hit left or right edge
+            edgeX = dx > 0 ? containerRect.width - margin : margin;
+            edgeY = centerY + slope * (edgeX - centerX);
           } else {
-            // Hit top or bottom border
-            borderY = dy > 0 ? bounds.height - margin : margin;
-            borderX = centerX + (borderY - centerY) / slope;
+            // Hit top or bottom edge
+            edgeY = dy > 0 ? containerRect.height - margin : margin;
+            edgeX = centerX + (edgeY - centerY) / slope;
           }
           
-          setPinPosition({ 
-            x: borderX, 
-            y: borderY, 
-            visible: false, 
-            angle: angle * (180 / Math.PI) 
+          setEdgeIndicator({
+            x: edgeX,
+            y: edgeY,
+            angle: angle * (180 / Math.PI)
           });
         }
       };
 
-      map.on('move', updateWaypoint);
-      map.on('zoom', updateWaypoint);
-      updateWaypoint();
+      // Update edge indicator when map moves or zooms
+      map.on('move', updateEdgeIndicator);
+      map.on('zoom', updateEdgeIndicator);
+      map.on('moveend', updateEdgeIndicator);
+      map.on('zoomend', updateEdgeIndicator);
+      
+      // Initial check
+      updateEdgeIndicator();
     }
 
+    // Cleanup function
     return () => {
       if (mapRef.current) {
+        mapRef.current.off('move');
+        mapRef.current.off('zoom');
+        mapRef.current.off('moveend');
+        mapRef.current.off('zoomend');
         mapRef.current.remove();
         mapRef.current = null;
+        markerRef.current = null;
       }
     };
-  }, [showMap, hasCoordinates, latitude, longitude]);
+  }, [showMap, hasCoordinates, latitude, longitude, address]);
+
+  // Function to recenter map on user location
+  const recenterMap = () => {
+    if (mapRef.current && hasCoordinates) {
+      mapRef.current.setView([latitude!, longitude!], 15, {
+        animate: true,
+        duration: 0.5
+      });
+    }
+  };
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -170,25 +217,23 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
         <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border/50">
           <div ref={mapContainerRef} className="w-full h-full" />
           
-          {/* Waypoint indicator - shows when location is off-screen */}
-          {pinPosition && !pinPosition.visible && (
-            <div
-              className="absolute pointer-events-none z-[1000] flex items-center justify-center"
+          {/* Edge indicator - shows when user location is off-screen */}
+          {edgeIndicator && (
+            <button
+              onClick={recenterMap}
+              className="absolute z-[1000] w-12 h-12 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-lg border-2 border-background cursor-pointer"
               style={{
-                left: `${pinPosition.x}px`,
-                top: `${pinPosition.y}px`,
-                transform: 'translate(-50%, -50%)'
+                left: `${edgeIndicator.x}px`,
+                top: `${edgeIndicator.y}px`,
+                transform: `translate(-50%, -50%) rotate(${edgeIndicator.angle}deg)`
               }}
+              title="Click to center on location"
             >
-              <div 
-                className="w-12 h-12 bg-primary/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border-2 border-background"
-                style={{
-                  transform: `rotate(${pinPosition.angle}deg)`
-                }}
-              >
-                <Navigation className="w-6 h-6 text-primary-foreground" style={{ transform: 'rotate(-90deg)' }} />
-              </div>
-            </div>
+              <Navigation 
+                className="w-6 h-6 text-primary-foreground" 
+                style={{ transform: 'rotate(-90deg)' }} 
+              />
+            </button>
           )}
         </div>
       )}

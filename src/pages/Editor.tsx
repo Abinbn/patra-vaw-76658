@@ -171,6 +171,25 @@ export const Editor: React.FC = () => {
     if (!user) return;
 
     try {
+      // Check localStorage for cached onboarding data first
+      const cachedData = localStorage.getItem('patra-onboarding-data');
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          setCardData(prev => ({
+            ...prev,
+            fullName: parsed.fullName || prev.fullName,
+            email: parsed.email || prev.email,
+            phone: parsed.phone || prev.phone,
+            jobTitle: parsed.jobTitle || prev.jobTitle,
+            company: parsed.company || prev.company,
+            about: parsed.bio || prev.about,
+          }));
+        } catch (e) {
+          console.error('Error parsing cached data:', e);
+        }
+      }
+
       // Load profile data
       const { data: profile } = await supabase
         .from('profiles')
@@ -181,9 +200,28 @@ export const Editor: React.FC = () => {
       // Load digital card data
       const { data: card } = await supabase
         .from('digital_cards')
-        .select('content_json')
+        .select('content_json, vanity_url')
         .eq('owner_user_id', user.id)
         .maybeSingle();
+
+      // Ensure vanity URL exists - if not, create one
+      if (card && !card.vanity_url) {
+        const generateRandomUsername = () => {
+          const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+          const length = Math.random() > 0.5 ? 4 : 5;
+          let username = '';
+          for (let i = 0; i < length; i++) {
+            username += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return username;
+        };
+
+        const newUsername = generateRandomUsername();
+        await supabase
+          .from('digital_cards')
+          .update({ vanity_url: newUsername })
+          .eq('owner_user_id', user.id);
+      }
 
       if (profile || card) {
         const cardContent = card?.content_json as any || {};
@@ -452,6 +490,19 @@ export const Editor: React.FC = () => {
                     <CardDescription>Tell people about yourself</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        value={user?.user_metadata?.username || ''}
+                        disabled
+                        className="bg-muted"
+                        placeholder="Your username"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your unique username for your card URL
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="fullName">Full Name</Label>

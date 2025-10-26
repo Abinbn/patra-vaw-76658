@@ -78,32 +78,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      // Generate random username - ALWAYS create one
+      // Generate random username - ALWAYS create one (4-5 alphanumeric characters)
       const generateUsername = async (): Promise<string> => {
-        // Start with a base from name or email
-        let base = fullName 
-          ? fullName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') 
-          : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const generateRandomUsername = () => {
+          const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+          const length = Math.random() > 0.5 ? 4 : 5; // Randomly choose 4 or 5 characters
+          let username = '';
+          for (let i = 0; i < length; i++) {
+            username += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return username;
+        };
         
-        // If base is empty, use 'user'
-        if (!base || base.length === 0) {
-          base = 'user';
-        }
+        let username = generateRandomUsername();
         
-        // Always add random 4-digit number to ensure uniqueness
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        let username = `${base}${randomNum}`;
-        
-        // Double-check for collisions (very rare with 4-digit random)
-        const { data: existingCard } = await supabase
-          .from('digital_cards')
-          .select('vanity_url')
-          .eq('vanity_url', username)
-          .maybeSingle();
-        
-        // If still exists (extremely rare), add more random digits
-        if (existingCard) {
-          username = `${base}${randomNum}${Math.floor(Math.random() * 99)}`;
+        // Check for collisions and regenerate if exists
+        let attempts = 0;
+        while (attempts < 10) {
+          const { data: existingCard } = await supabase
+            .from('digital_cards')
+            .select('vanity_url')
+            .eq('vanity_url', username)
+            .maybeSingle();
+          
+          if (!existingCard) {
+            break;
+          }
+          
+          username = generateRandomUsername();
+          attempts++;
         }
         
         return username;

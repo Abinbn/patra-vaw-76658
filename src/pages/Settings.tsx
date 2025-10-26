@@ -91,12 +91,32 @@ export const Settings: React.FC = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [activeSection, setActiveSection] = useState('account');
   const [developerExpanded, setDeveloperExpanded] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchUsername();
     }
   }, [user]);
+
+  const fetchUsername = async () => {
+    if (!user) return;
+
+    try {
+      const { data: card } = await supabase
+        .from('digital_cards')
+        .select('vanity_url')
+        .eq('owner_user_id', user.id)
+        .maybeSingle();
+
+      if (card?.vanity_url) {
+        setCurrentUsername(card.vanity_url);
+      }
+    } catch (error: any) {
+      console.error('Error fetching username:', error);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -185,19 +205,45 @@ export const Settings: React.FC = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Delete old card
+      await supabase
         .from('digital_cards')
         .delete()
         .eq('owner_user_id', user.id);
 
-      if (error) throw error;
+      // Generate new random username
+      const generateRandomUsername = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const length = Math.random() > 0.5 ? 4 : 5;
+        let username = '';
+        for (let i = 0; i < length; i++) {
+          username += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return username;
+      };
+
+      const newUsername = generateRandomUsername();
+
+      // Create new card with new username
+      const { error: createError } = await supabase
+        .from('digital_cards')
+        .insert({
+          owner_user_id: user.id,
+          title: profile?.display_name || 'My Card',
+          vanity_url: newUsername,
+          content_json: {},
+          is_active: true,
+        });
+
+      if (createError) throw createError;
 
       toast({
         title: "Success",
-        description: "Profile reset successfully"
+        description: "Profile reset successfully with new username"
       });
       setShowResetDialog(false);
       setResetUsername('');
+      setCurrentUsername(newUsername);
       navigate('/editor');
     } catch (error: any) {
       console.error('Error resetting profile:', error);
@@ -1068,21 +1114,19 @@ export const Settings: React.FC = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Reset Profile</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will delete all your cards and start from scratch. This action cannot be undone.
-                                <br /><br />
-                                To confirm, please type your username: <strong>{profile?.display_name}</strong>
+                                This will delete all your cards and generate a new username. Type "{currentUsername}" to confirm.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <Input
                               value={resetUsername}
                               onChange={(e) => setResetUsername(e.target.value)}
-                              placeholder="Enter your username"
+                              placeholder={`Type "${currentUsername}" to confirm`}
                             />
                             <AlertDialogFooter>
                               <AlertDialogCancel onClick={() => setResetUsername('')}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={handleResetProfile} 
-                                disabled={resetUsername !== profile?.display_name || loading}
+                                disabled={resetUsername !== currentUsername || loading}
                                 className="bg-destructive text-destructive-foreground"
                               >
                                 {loading ? 'Resetting...' : 'Reset Profile'}
@@ -1107,21 +1151,19 @@ export const Settings: React.FC = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Account</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete your account. Your email, phone number, and name will be retained for 30 days. This action cannot be undone.
-                                <br /><br />
-                                To confirm, please type your username: <strong>{profile?.display_name}</strong>
+                                This will permanently delete your account. Type "{currentUsername}" to confirm deletion.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <Input
                               value={deleteUsername}
                               onChange={(e) => setDeleteUsername(e.target.value)}
-                              placeholder="Enter your username"
+                              placeholder={`Type "${currentUsername}" to confirm`}
                             />
                             <AlertDialogFooter>
                               <AlertDialogCancel onClick={() => setDeleteUsername('')}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={handleDeleteAccount} 
-                                disabled={deleteUsername !== profile?.display_name || loading}
+                                disabled={deleteUsername !== currentUsername || loading}
                                 className="bg-destructive text-destructive-foreground"
                               >
                                 {loading ? 'Deleting...' : 'Delete Account'}

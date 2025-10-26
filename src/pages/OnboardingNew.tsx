@@ -206,6 +206,9 @@ export const OnboardingNew: React.FC = () => {
     if (!user) return;
 
     try {
+      // Save to localStorage for recovery
+      localStorage.setItem('patra-onboarding-data', JSON.stringify(data));
+
       // Get profile ID first
       const { data: profileData, error: profileFetchError } = await supabase
         .from('profiles')
@@ -215,29 +218,34 @@ export const OnboardingNew: React.FC = () => {
 
       if (profileFetchError) throw profileFetchError;
 
-      // Generate username function with better collision handling
-      const generateUsername = async (baseUsername: string): Promise<string> => {
-        let base = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+      // Generate username function - 4-5 alphanumeric characters
+      const generateUsername = async (): Promise<string> => {
+        const generateRandomUsername = () => {
+          const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+          const length = Math.random() > 0.5 ? 4 : 5;
+          let username = '';
+          for (let i = 0; i < length; i++) {
+            username += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return username;
+        };
         
-        // Ensure base is not empty
-        if (!base || base.length === 0) {
-          base = 'user';
-        }
+        let username = generateRandomUsername();
+        let attempts = 0;
         
-        // Always add random 4-digit number to ensure uniqueness
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        let username = `${base}${randomNum}`;
-        
-        // Double-check for collisions
-        const { data: existingCard } = await supabase
-          .from('digital_cards')
-          .select('vanity_url')
-          .eq('vanity_url', username)
-          .maybeSingle();
-        
-        // If still exists (extremely rare), add more random digits
-        if (existingCard) {
-          username = `${base}${randomNum}${Math.floor(Math.random() * 99)}`;
+        while (attempts < 10) {
+          const { data: existingCard } = await supabase
+            .from('digital_cards')
+            .select('vanity_url')
+            .eq('vanity_url', username)
+            .maybeSingle();
+          
+          if (!existingCard) {
+            break;
+          }
+          
+          username = generateRandomUsername();
+          attempts++;
         }
         
         return username;
@@ -250,7 +258,7 @@ export const OnboardingNew: React.FC = () => {
           ? data.avatar_url 
           : '';
 
-      // Always generate and create username for new users
+      // Check for existing card
       const { data: existingCard, error: cardCheckError } = await supabase
         .from('digital_cards')
         .select('id, vanity_url')
@@ -260,36 +268,22 @@ export const OnboardingNew: React.FC = () => {
       let vanityUrl = '';
 
       if (!existingCard) {
-        // Generate username from display name, email, or default
-        const baseUsername = data.display_name
-          ? data.display_name.split(' ')[0]
-          : user.email?.split('@')[0] || 'user';
-        
-        vanityUrl = await generateUsername(baseUsername);
+        // Generate username
+        vanityUrl = await generateUsername();
         
         const { error: insertError } = await supabase.from('digital_cards').insert({
           owner_user_id: user.id,
           title: data.display_name || user.email?.split('@')[0] || 'My Card',
           vanity_url: vanityUrl,
           content_json: {
-            name: data.display_name || '',
+            fullName: data.display_name || '',
             email: data.email || '',
             phone: data.phone || '',
             jobTitle: data.job_title || '',
             bio: data.bio || '',
             company: data.company || '',
-            website: data.website || '',
-            avatar: finalAvatarUrl,
-            showAvatar: !!finalAvatarUrl,
-            showName: true,
-            showJobTitle: !!data.job_title,
-            showPhone: !!data.phone,
-            showEmail: true,
-            showBio: !!data.bio,
-            showQRCode: true,
-            showCompany: !!data.company,
-            showWebsite: !!data.website,
-          }
+            avatarUrl: finalAvatarUrl,
+          },
         });
 
         if (insertError) throw insertError;

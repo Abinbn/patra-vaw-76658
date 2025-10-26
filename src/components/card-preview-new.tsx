@@ -354,6 +354,32 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
         const order = cardData.cardOrder || defaultOrder;
         const visibility = cardData.cardVisibility || defaultVisibility;
 
+        // Check if sections have content
+        const hasContent = (sectionId: string) => {
+          switch (sectionId) {
+            case 'contact':
+              return cardData.email || cardData.phone || cardData.contactForm || cardData.calendar;
+            case 'verified':
+              return cardData.socialLinks && cardData.socialLinks.length > 0;
+            case 'links':
+              return cardData.customLinks && cardData.customLinks.length > 0;
+            case 'achievements':
+              return cardData.achievements && cardData.achievements.length > 0;
+            case 'testimonials':
+              return cardData.testimonials && cardData.testimonials.length > 0;
+            case 'interests':
+              return cardData.interests && cardData.interests.length > 0;
+            case 'gallery':
+              return cardData.photos && cardData.photos.length > 0;
+            case 'languages':
+              return cardData.languages && cardData.languages.length > 0;
+            case 'location':
+              return cardData.address || (cardData.latitude && cardData.longitude);
+            default:
+              return false;
+          }
+        };
+
         const sectionMap: Record<string, React.ReactNode> = {
           contact: visibility.contact && <ContactSection key="contact" cardData={cardData} showAIButton={showAIButton} getSocialIcon={getSocialIcon} />,
           verified: visibility.verified && <VerifiedSection key="verified" cardData={cardData} getSocialIcon={getSocialIcon} />,
@@ -366,7 +392,61 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
           location: visibility.location && <LocationSection key="location" cardData={cardData} getSocialIcon={getSocialIcon} />,
         };
 
-        return order.map(sectionId => sectionMap[sectionId]).filter(Boolean);
+        // Separate filled and empty sections
+        const filledSections = order.filter(sectionId => hasContent(sectionId) && sectionMap[sectionId]);
+        const emptySections = order.filter(sectionId => !hasContent(sectionId) && visibility[sectionId as keyof typeof visibility]);
+
+        return (
+          <>
+            {/* Render filled sections */}
+            {filledSections.map(sectionId => sectionMap[sectionId])}
+            
+            {/* Separator if there are empty sections */}
+            {emptySections.length > 0 && filledSections.length > 0 && (
+              <div className="my-6 border-t border-border/50" />
+            )}
+            
+            {/* Empty sections - clickable cards */}
+            {emptySections.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add More Information</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {emptySections.map(sectionId => {
+                    const sectionLabels: Record<string, { icon: any; label: string }> = {
+                      contact: { icon: Phone, label: 'Contact' },
+                      verified: { icon: Check, label: 'Social' },
+                      links: { icon: Globe, label: 'Links' },
+                      achievements: { icon: Award, label: 'Achievements' },
+                      testimonials: { icon: MessageCircle, label: 'Testimonials' },
+                      interests: { icon: Heart, label: 'Interests' },
+                      gallery: { icon: ImageIcon, label: 'Gallery' },
+                      languages: { icon: Globe, label: 'Languages' },
+                    };
+                    
+                    const section = sectionLabels[sectionId];
+                    if (!section) return null;
+                    
+                    const Icon = section.icon;
+                    
+                    return (
+                      <button
+                        key={sectionId}
+                        onClick={() => {
+                          // Navigate to editor with section focused
+                          window.location.href = '/editor';
+                        }}
+                        className="flex flex-col items-center justify-center p-3 rounded-lg border border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                      >
+                        <Icon className="w-5 h-5 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">{section.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+          </>
+        );
       })()}
 
 

@@ -5,12 +5,13 @@ export interface CardTemplate {
   thumbnail: string;
   category: 'card' | 'profile';
   style: {
-    layout: 'classic' | 'modern' | 'minimal' | 'bento' | 'magazine' | 'creative';
+    layout: 'classic' | 'modern' | 'minimal' | 'bento' | 'magazine' | 'creative' | 'portrait';
     colorScheme?: string;
     cardStyle?: React.CSSProperties;
     headerStyle?: React.CSSProperties;
     sectionStyle?: React.CSSProperties;
     customCSS?: string;
+    hasFrontBack?: boolean;
   };
   features: string[];
   isPremium?: boolean;
@@ -108,6 +109,75 @@ export const defaultCardTemplates: CardTemplate[] = [
       `
     },
     features: ['Ultra Clean', 'Content First', 'Lightweight']
+  },
+  {
+    id: 'portrait',
+    name: 'Portrait ID Card',
+    description: 'Professional ID card style with front and back layout',
+    thumbnail: '/templates/classic.png',
+    category: 'card',
+    style: {
+      layout: 'portrait',
+      hasFrontBack: true,
+      customCSS: `
+        .card-container { 
+          background: hsl(var(--background));
+          padding: 2rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+        }
+        .portrait-card {
+          width: 85.6mm;
+          height: 53.98mm;
+          background: hsl(var(--card));
+          border-radius: 0.75rem;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+          position: relative;
+          overflow: hidden;
+        }
+        .portrait-card-front {
+          padding: 1rem;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .portrait-card-back {
+          padding: 1rem;
+          height: 100%;
+          background: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--accent) / 0.05));
+        }
+        .portrait-header {
+          background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          color: white;
+          text-align: center;
+        }
+        .portrait-avatar {
+          width: 80px;
+          height: 80px;
+          margin: 0 auto;
+          border: 3px solid hsl(var(--primary));
+          border-radius: 0.5rem;
+        }
+        .portrait-info {
+          font-size: 0.75rem;
+          line-height: 1.3;
+        }
+        @media (max-width: 768px) {
+          .portrait-card {
+            width: 90vw;
+            max-width: 350px;
+            height: auto;
+            aspect-ratio: 1.586;
+          }
+        }
+      `
+    },
+    features: ['ID Card Style', 'Front & Back', 'Compact Design']
   },
   {
     id: 'bento',

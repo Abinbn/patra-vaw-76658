@@ -249,9 +249,21 @@ export const Templates: React.FC = () => {
           <TabsContent value="card" className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-2">Card Templates</h2>
-              <p className="text-muted-foreground">
-                Perfect for business cards and quick sharing
+              <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
+                Templates change the visual design and layout of your digital card. Your content (name, contact info, links) stays the same - only the styling changes. Choose a template that matches your professional style.
               </p>
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 max-w-2xl mx-auto mb-6">
+                <h3 className="font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  What happens when you apply a template?
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1 text-left max-w-md mx-auto">
+                  <li>✓ Your design updates instantly with new colors and layout</li>
+                  <li>✓ All your content (contact info, links, photos) remains unchanged</li>
+                  <li>✓ You can switch templates anytime without losing data</li>
+                  <li>✓ Preview your card before making it public</li>
+                </ul>
+              </div>
               <div className="flex justify-center gap-2 mt-4">
                 <Button 
                   variant="outline" 
@@ -283,9 +295,20 @@ export const Templates: React.FC = () => {
           <TabsContent value="profile" className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-2">Profile Templates</h2>
-              <p className="text-muted-foreground">
-                Comprehensive layouts for full profile pages
+              <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
+                Profile templates offer comprehensive layouts for showcasing your full professional presence. These templates include advanced sections like galleries, testimonials, and achievements.
               </p>
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 max-w-2xl mx-auto mb-6">
+                <h3 className="font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+                  <Layout className="w-4 h-4 text-accent" />
+                  Profile vs Card Templates
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1 text-left max-w-md mx-auto">
+                  <li><strong>Card Templates:</strong> Compact, business card-style layouts</li>
+                  <li><strong>Profile Templates:</strong> Full-page layouts with advanced features</li>
+                  <li>Both use your same content - just different presentations</li>
+                </ul>
+              </div>
               <div className="flex justify-center gap-2 mt-4">
                 <Button 
                   variant="outline" 

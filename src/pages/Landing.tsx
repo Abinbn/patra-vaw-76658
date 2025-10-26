@@ -34,7 +34,23 @@ export const Landing: React.FC = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-  const cardStyles = ['from-violet-600 via-purple-600 to-indigo-600', 'from-emerald-600 via-teal-600 to-cyan-600', 'from-orange-600 via-rose-600 to-pink-600'];
+  const cardDesigns = [
+    {
+      type: 'gradient',
+      classes: 'bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600',
+      accentColor: 'violet'
+    },
+    {
+      type: 'glassmorphism',
+      classes: 'bg-slate-900/90 backdrop-blur-xl border-2 border-white/10',
+      accentColor: 'emerald'
+    },
+    {
+      type: 'pattern',
+      classes: 'bg-white border-2 border-slate-200',
+      accentColor: 'orange'
+    }
+  ];
   const testimonials = [{
     name: "Sarah Chen",
     role: "CEO, TechStart",
@@ -150,55 +166,190 @@ export const Landing: React.FC = () => {
               </div>
 
               <div className="relative perspective-1000">
-                <div className="relative w-full max-w-2xl mx-auto transition-transform duration-500" style={{
+                <div className="relative w-full max-w-4xl mx-auto transition-transform duration-500" style={{
                 transform: `rotateY(${(mousePosition.x - (typeof window !== 'undefined' ? window.innerWidth : 0) / 2) * 0.01}deg) rotateX(${-(mousePosition.y - (typeof window !== 'undefined' ? window.innerHeight : 0) / 2) * 0.01}deg)`
               }}>
-                  <div className="absolute inset-0 bg-slate-300/30 rounded-2xl blur-sm transform translate-y-4 translate-x-2"></div>
-                  <div className="absolute inset-0 bg-slate-200/30 rounded-2xl blur-sm transform translate-y-2 translate-x-1"></div>
+                  {/* Shadows */}
+                  <div className="absolute inset-0 bg-slate-300/30 rounded-3xl blur-sm transform translate-y-4 translate-x-2"></div>
+                  <div className="absolute inset-0 bg-slate-200/30 rounded-3xl blur-sm transform translate-y-2 translate-x-1"></div>
                   
-                  <div className={`relative bg-gradient-to-br ${cardStyles[activeCard]} rounded-2xl shadow-2xl p-8 aspect-[1.6/1] border border-white/20 overflow-hidden transform transition-all duration-500`}>
+                  {/* Card Design 1: Gradient Modern */}
+                  <div className={`relative ${cardDesigns[0].classes} rounded-3xl shadow-2xl p-6 sm:p-10 aspect-[16/10] sm:aspect-[1.6/1] overflow-hidden transform transition-all duration-500 ${activeCard === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0'}`}>
+                    {/* Noise Texture */}
                     <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E")'
-                  }}></div>
+                      backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E")'
+                    }}></div>
 
-                    <div className="absolute top-6 left-6 text-white/90 text-sm font-bold tracking-wide">
-                      <span className="text-violet-400">P</span>atra
-                    </div>
-
-                    <div className="absolute top-6 right-6">
-                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                        <Wifi className="w-6 h-6 text-white rotate-90" />
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-8 sm:mb-12">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <Layers className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-white/90 text-sm sm:text-base font-bold tracking-wide">Patra</span>
+                      </div>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <Wifi className="w-5 h-5 sm:w-6 sm:h-6 text-white rotate-90" />
                       </div>
                     </div>
 
-                    <div className="relative h-full flex items-center gap-6">
-                      <div className="w-28 h-28 rounded-xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center text-4xl font-bold text-white shadow-xl">
+                    {/* Content */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                      <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center text-2xl sm:text-4xl font-bold text-white shadow-xl">
                         JD
                       </div>
                       
-                      <div className="flex-1 text-white">
-                        <h3 className="text-3xl font-bold mb-2">John Doe</h3>
-                        <p className="text-lg text-white/90 mb-1">Product Designer</p>
-                        <p className="text-sm text-white/70 mb-4">Patra Inc.</p>
+                      <div className="flex-1 text-white space-y-1 sm:space-y-2">
+                        <h3 className="text-2xl sm:text-3xl font-bold">John Doe</h3>
+                        <p className="text-base sm:text-lg text-white/90">Product Designer</p>
+                        <p className="text-xs sm:text-sm text-white/70 mb-2 sm:mb-4">Patra Inc.</p>
                         
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
-                              <span className="text-xs">✉</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-2">
+                          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                            <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                              <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                             </div>
-                            <span className="text-white/90">john@patra.com</span>
+                            <span className="text-white/90 truncate">john@patra.com</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
-                              <span className="text-xs">📞</span>
+                          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                            <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                              <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                             </div>
-                            <span className="text-white/90">+1 (555) 123-4567</span>
+                            <span className="text-white/90 truncate">+1 (555) 123-4567</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none"></div>
+                  </div>
+
+                  {/* Card Design 2: Glassmorphism Dark */}
+                  <div className={`relative ${cardDesigns[1].classes} rounded-3xl shadow-2xl p-6 sm:p-10 aspect-[16/10] sm:aspect-[1.6/1] overflow-hidden transform transition-all duration-500 ${activeCard === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0'}`}>
+                    {/* Animated Background Mesh */}
+                    <div className="absolute inset-0 opacity-30">
+                      <div className="absolute top-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-emerald-500 rounded-full blur-3xl animate-pulse"></div>
+                      <div className="absolute bottom-0 right-0 w-32 h-32 sm:w-48 sm:h-48 bg-teal-500 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+                    </div>
+
+                    {/* Header */}
+                    <div className="relative flex justify-between items-start mb-8 sm:mb-12">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center border border-emerald-400/30">
+                          <Zap className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <span className="text-white text-sm sm:text-base font-bold tracking-wide">Patra</span>
+                      </div>
+                      <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30">
+                        <span className="text-emerald-300 text-xs sm:text-sm font-semibold">PRO</span>
+                      </div>
+                    </div>
+
+                    {/* Content - Different Layout */}
+                    <div className="relative space-y-4 sm:space-y-6">
+                      <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-2xl sm:text-3xl font-bold text-white shadow-2xl border-2 border-white/20">
+                          JD
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1">John Doe</h3>
+                          <p className="text-base sm:text-lg text-emerald-300">Product Designer</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 hover:bg-white/10 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <Globe className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Email</p>
+                            <p className="text-white text-xs sm:text-sm truncate">john@patra.com</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 hover:bg-white/10 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                            <Smartphone className="w-4 h-4 text-teal-400" />
+                          </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Phone</p>
+                            <p className="text-white text-xs sm:text-sm truncate">+1 (555) 123-4567</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Design 3: Pattern Minimal */}
+                  <div className={`relative ${cardDesigns[2].classes} rounded-3xl shadow-2xl p-6 sm:p-10 aspect-[16/10] sm:aspect-[1.6/1] overflow-hidden transform transition-all duration-500 ${activeCard === 2 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0'}`}>
+                    {/* Decorative Pattern */}
+                    <div className="absolute inset-0 opacity-5" style={{
+                      backgroundImage: `
+                        linear-gradient(45deg, #f97316 25%, transparent 25%),
+                        linear-gradient(-45deg, #f97316 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #f97316 75%),
+                        linear-gradient(-45deg, transparent 75%, #f97316 75%)
+                      `,
+                      backgroundSize: '20px 20px',
+                      backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                    }}></div>
+
+                    {/* Accent Corner */}
+                    <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48">
+                      <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-rose-500 opacity-10 rounded-bl-full"></div>
+                    </div>
+
+                    {/* Header */}
+                    <div className="relative flex justify-between items-start mb-8 sm:mb-12">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-slate-900 text-sm sm:text-base font-bold tracking-wide">Patra</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                      </div>
+                    </div>
+
+                    {/* Content - Bento Style Layout */}
+                    <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2 space-y-3 sm:space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-xl sm:text-2xl font-bold text-white shadow-lg">
+                            JD
+                          </div>
+                          <div>
+                            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">John Doe</h3>
+                            <p className="text-sm sm:text-base text-slate-600">Product Designer</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center flex-shrink-0">
+                              <Globe className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-slate-700 text-xs sm:text-sm truncate">john@patra.com</span>
+                          </div>
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center flex-shrink-0">
+                              <Smartphone className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-slate-700 text-xs sm:text-sm truncate">+1 (555) 123-4567</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:flex flex-col justify-center items-center gap-3">
+                        <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center border-2 border-slate-200 border-dashed">
+                          <QrCode className="w-10 h-10 text-slate-400" />
+                        </div>
+                        <p className="text-xs text-slate-500 text-center">Scan to connect</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

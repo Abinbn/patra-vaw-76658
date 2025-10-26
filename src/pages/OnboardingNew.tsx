@@ -198,6 +198,46 @@ export const OnboardingNew: React.FC = () => {
 
       if (profileFetchError) throw profileFetchError;
 
+      // Check if digital card exists, if not create one with auto-generated username
+      const { data: existingCard } = await supabase
+        .from('digital_cards')
+        .select('vanity_url')
+        .eq('owner_user_id', user.id)
+        .single();
+
+      if (!existingCard) {
+        // Generate username from email or name
+        const generateUsername = async (baseUsername: string): Promise<string> => {
+          let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+          
+          const { data: existingCard } = await supabase
+            .from('digital_cards')
+            .select('vanity_url')
+            .eq('vanity_url', username)
+            .single();
+          
+          if (existingCard) {
+            const randomNum = Math.floor(Math.random() * 9999);
+            username = `${username}${randomNum}`;
+          }
+          
+          return username;
+        };
+
+        const baseUsername = data.display_name
+          ? data.display_name.split(' ')[0]
+          : user.email?.split('@')[0] || 'user';
+        
+        const username = await generateUsername(baseUsername);
+        
+        await supabase.from('digital_cards').insert({
+          owner_user_id: user.id,
+          title: data.display_name || user.email?.split('@')[0] || 'User',
+          vanity_url: username,
+          content_json: {}
+        });
+      }
+
       const updateData: any = {
         display_name: data.display_name,
         phone: data.phone || null,
@@ -241,7 +281,7 @@ export const OnboardingNew: React.FC = () => {
       });
 
       // Redirect based on account type
-      navigate(data.accountType === 'company' ? '/dashboard' : '/editor');
+      navigate(data.accountType === 'company' ? '/dashboard' : '/profile-creation');
     } catch (error: any) {
       console.error('Error completing onboarding:', error);
       toast({

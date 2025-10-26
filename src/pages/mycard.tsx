@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Edit, Share2, Printer, FlipHorizontal, ArrowLeft, Nfc, Mail, Phone } from 'lucide-react';
+import { Edit, Share2, Printer, FlipHorizontal, ArrowLeft, Nfc, Mail, Phone, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import QRCode from 'react-qr-code';
 import { updateOGMetaTags, generateShareText, shareProfile } from '@/lib/og-utils';
@@ -387,12 +387,21 @@ export const MyCard: React.FC = () => {
         {/* Buttons below the Card */}
         <div className="flex gap-3 mt-4 justify-center">
           <button  
+            onClick={() => navigate('/editor')}
+            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+          >
+            <Edit className="w-4 h-4" />
+            Editor
+          </button>
+          
+          <button  
             onClick={() => {
               window.location.href = cardUrl; 
             }}
-            className="inline-block px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
           >
-            {cardData.fullName}'s Profile
+            <User className="w-4 h-4" />
+            Profile
           </button>
           
           <button  

@@ -75,17 +75,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: fullName ? { full_name: fullName } : undefined
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      // Generate username from email or name
+      const generateUsername = async (baseUsername: string): Promise<string> => {
+        let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Check if username exists
+        const { data: existingCard } = await supabase
+          .from('digital_cards')
+          .select('vanity_url')
+          .eq('vanity_url', username)
+          .single();
+        
+        if (existingCard) {
+          // Add random number if username exists
+          const randomNum = Math.floor(Math.random() * 9999);
+          username = `${username}${randomNum}`;
+        }
+        
+        return username;
+      };
+      
+      const baseUsername = fullName 
+        ? fullName.split(' ')[0] 
+        : email.split('@')[0];
+      
+      const username = await generateUsername(baseUsername);
+      
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            username: username
+          }
+        }
+      });
+      
+      // Create digital card with vanity_url immediately
+      if (data.user && !error) {
+        await supabase.from('digital_cards').insert({
+          owner_user_id: data.user.id,
+          title: fullName || email.split('@')[0],
+          vanity_url: username,
+          content_json: {}
+        });
       }
-    });
-    return { error };
+      
+      return { error };
+    } catch (error: any) {
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -100,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/editor`
+        redirectTo: `${window.location.origin}/onboarding`
       }
     });
     return { error };

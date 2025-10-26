@@ -11,6 +11,7 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { DashboardRouter } from "./pages/DashboardRouter";
 import { OnboardingNew } from "./pages/OnboardingNew";
+import { ProfileCreation } from "./pages/ProfileCreation";
 import { Analytics } from "./pages/Analytics";
 import { EditorNew } from "./pages/EditorNew";
 import { CardEditorNew } from "./pages/CardEditorNew";
@@ -46,6 +47,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OnboardingNew />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile-creation"
+              element={
+                <ProtectedRoute>
+                  <ProfileCreation />
                 </ProtectedRoute>
               }
             />

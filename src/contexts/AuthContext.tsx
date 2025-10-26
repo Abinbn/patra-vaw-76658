@@ -78,31 +78,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      // Generate username from email or name
-      const generateUsername = async (baseUsername: string): Promise<string> => {
-        let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+      // Generate random username - ALWAYS create one
+      const generateUsername = async (): Promise<string> => {
+        // Start with a base from name or email
+        let base = fullName 
+          ? fullName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') 
+          : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
         
-        // Check if username exists
+        // If base is empty, use 'user'
+        if (!base || base.length === 0) {
+          base = 'user';
+        }
+        
+        // Always add random 4-digit number to ensure uniqueness
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        let username = `${base}${randomNum}`;
+        
+        // Double-check for collisions (very rare with 4-digit random)
         const { data: existingCard } = await supabase
           .from('digital_cards')
           .select('vanity_url')
           .eq('vanity_url', username)
-          .single();
+          .maybeSingle();
         
+        // If still exists (extremely rare), add more random digits
         if (existingCard) {
-          // Add random number if username exists
-          const randomNum = Math.floor(Math.random() * 9999);
-          username = `${username}${randomNum}`;
+          username = `${base}${randomNum}${Math.floor(Math.random() * 99)}`;
         }
         
         return username;
       };
       
-      const baseUsername = fullName 
-        ? fullName.split(' ')[0] 
-        : email.split('@')[0];
-      
-      const username = await generateUsername(baseUsername);
+      const username = await generateUsername();
       
       const { error, data } = await supabase.auth.signUp({
         email,
@@ -120,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user && !error) {
         await supabase.from('digital_cards').insert({
           owner_user_id: data.user.id,
-          title: fullName || email.split('@')[0],
+          title: fullName || email.split('@')[0] || 'My Card',
           vanity_url: username,
           content_json: {}
         });

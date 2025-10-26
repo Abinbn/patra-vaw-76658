@@ -51,8 +51,10 @@ interface OnboardingData {
   bio: string;
   job_title: string;
   avatar_url: string;
+  google_avatar_url: string;
   website: string;
   company: string;
+  selectedAvatarSource: 'google' | 'upload' | null;
 }
 
 const aiLoadingSteps = [
@@ -90,9 +92,11 @@ export const OnboardingNew: React.FC = () => {
     verificationPaid: false,
     bio: '',
     job_title: '',
-    avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '',
+    avatar_url: '',
+    google_avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '',
     website: '',
     company: '',
+    selectedAvatarSource: user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? 'google' : null,
   });
 
   useEffect(() => {
@@ -213,28 +217,38 @@ export const OnboardingNew: React.FC = () => {
 
       // Generate username function with better collision handling
       const generateUsername = async (baseUsername: string): Promise<string> => {
-        let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let base = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
         
-        // Ensure username is not empty
-        if (!username || username.length === 0) {
-          username = 'user';
+        // Ensure base is not empty
+        if (!base || base.length === 0) {
+          base = 'user';
         }
         
-        // Check if username exists
+        // Always add random 4-digit number to ensure uniqueness
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        let username = `${base}${randomNum}`;
+        
+        // Double-check for collisions
         const { data: existingCard } = await supabase
           .from('digital_cards')
           .select('vanity_url')
           .eq('vanity_url', username)
-          .single();
+          .maybeSingle();
         
-        // If exists, add random number
+        // If still exists (extremely rare), add more random digits
         if (existingCard) {
-          const randomNum = Math.floor(1000 + Math.random() * 9000); // 4-digit number
-          username = `${username}${randomNum}`;
+          username = `${base}${randomNum}${Math.floor(Math.random() * 99)}`;
         }
         
         return username;
       };
+
+      // Determine final avatar URL
+      const finalAvatarUrl = data.selectedAvatarSource === 'google' 
+        ? data.google_avatar_url 
+        : data.selectedAvatarSource === 'upload' 
+          ? data.avatar_url 
+          : '';
 
       // Always generate and create username for new users
       const { data: existingCard, error: cardCheckError } = await supabase
@@ -249,7 +263,7 @@ export const OnboardingNew: React.FC = () => {
         // Generate username from display name, email, or default
         const baseUsername = data.display_name
           ? data.display_name.split(' ')[0]
-          : user.email?.split('@')[0] || `user${Math.floor(1000 + Math.random() * 9000)}`;
+          : user.email?.split('@')[0] || 'user';
         
         vanityUrl = await generateUsername(baseUsername);
         
@@ -265,8 +279,8 @@ export const OnboardingNew: React.FC = () => {
             bio: data.bio || '',
             company: data.company || '',
             website: data.website || '',
-            avatar: data.avatar_url || '',
-            showAvatar: !!data.avatar_url,
+            avatar: finalAvatarUrl,
+            showAvatar: !!finalAvatarUrl,
             showName: true,
             showJobTitle: !!data.job_title,
             showPhone: !!data.phone,
@@ -291,7 +305,7 @@ export const OnboardingNew: React.FC = () => {
         location_coordinates: data.locationCoords ? `(${data.locationCoords.lat},${data.locationCoords.lng})` : null,
         device_info: data.deviceInfo,
         onboarding_completed: true,
-        avatar_url: data.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        avatar_url: finalAvatarUrl || null,
         bio: data.bio || null,
         job_title: data.job_title || null,
         company_name: data.company || null,
@@ -346,8 +360,8 @@ export const OnboardingNew: React.FC = () => {
               bio: data.bio || '',
               company: data.company || '',
               website: data.website || '',
-              avatar: data.avatar_url || '',
-              showAvatar: !!data.avatar_url,
+              avatar: finalAvatarUrl,
+              showAvatar: !!finalAvatarUrl,
               showName: true,
               showJobTitle: !!data.job_title,
               showPhone: !!data.phone,
@@ -429,7 +443,7 @@ export const OnboardingNew: React.FC = () => {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      setData({ ...data, avatar_url: publicUrl });
+      setData({ ...data, avatar_url: publicUrl, selectedAvatarSource: 'upload' });
       
       toast({
         title: "Avatar uploaded!",
@@ -694,28 +708,58 @@ export const OnboardingNew: React.FC = () => {
                   <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Add your photo</h2>
-                  <p className="text-slate-600">Make your card more personal (optional)</p>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose your photo</h2>
+                  <p className="text-slate-600">Select between Google photo or upload new (optional)</p>
                 </div>
                 
-                <div className="flex flex-col items-center space-y-4">
-                  <Avatar className="w-32 h-32">
-                    <AvatarImage src={data.avatar_url} alt="Profile" />
-                    <AvatarFallback className="text-2xl">
-                      <User className="w-16 h-16" />
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex gap-2">
-                    <Button
+                <div className="flex flex-col items-center space-y-6">
+                  {/* Avatar options */}
+                  <div className="flex gap-6">
+                    {/* Google Photo Option */}
+                    {data.google_avatar_url && (
+                      <button
+                        type="button"
+                        onClick={() => setData({ ...data, selectedAvatarSource: 'google' })}
+                        className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${
+                          data.selectedAvatarSource === 'google'
+                            ? 'border-4 border-green-500 bg-green-50'
+                            : 'border-2 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <Avatar className="w-24 h-24">
+                          <AvatarImage src={data.google_avatar_url} alt="Google Profile" />
+                          <AvatarFallback>
+                            <User className="w-12 h-12" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">Google Photo</span>
+                        {data.selectedAvatarSource === 'google' && (
+                          <span className="text-xs text-green-600 font-semibold">Selected</span>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Upload Photo Option */}
+                    <button
                       type="button"
-                      variant="outline"
                       onClick={() => document.getElementById('avatar-upload')?.click()}
-                      className="gap-2"
+                      className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${
+                        data.selectedAvatarSource === 'upload'
+                          ? 'border-4 border-green-500 bg-green-50'
+                          : 'border-2 border-slate-200 hover:border-slate-300'
+                      }`}
                     >
-                      <Upload className="w-4 h-4" />
-                      Upload Photo
-                    </Button>
+                      <Avatar className="w-24 h-24">
+                        <AvatarImage src={data.avatar_url} alt="Uploaded Profile" />
+                        <AvatarFallback className="bg-slate-100">
+                          <Upload className="w-12 h-12 text-slate-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">Upload Photo</span>
+                      {data.selectedAvatarSource === 'upload' && (
+                        <span className="text-xs text-green-600 font-semibold">Selected</span>
+                      )}
+                    </button>
                     <input
                       id="avatar-upload"
                       type="file"
@@ -725,8 +769,20 @@ export const OnboardingNew: React.FC = () => {
                     />
                   </div>
                   
-                  {data.avatar_url && (
-                    <p className="text-xs text-green-600">✓ Profile photo set</p>
+                  {/* Preview of selected avatar */}
+                  {(data.selectedAvatarSource === 'google' || data.selectedAvatarSource === 'upload') && (
+                    <div className="text-center">
+                      <p className="text-sm text-green-600 font-medium mb-2">✓ Profile photo selected</p>
+                      <Avatar className="w-32 h-32 mx-auto border-4 border-green-500">
+                        <AvatarImage 
+                          src={data.selectedAvatarSource === 'google' ? data.google_avatar_url : data.avatar_url} 
+                          alt="Selected" 
+                        />
+                        <AvatarFallback>
+                          <User className="w-16 h-16" />
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
                   )}
                 </div>
 

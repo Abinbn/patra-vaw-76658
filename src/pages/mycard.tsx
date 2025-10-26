@@ -221,37 +221,76 @@ export const MyCard: React.FC = () => {
                 </div>
 
                 {/* Card Content */}
-                <div className="relative h-full p-6 flex items-center gap-5">
-                  {/* Profile Image */}
-                  <div className="flex-shrink-0">
-                    {cardData.avatarUrl ? <img src={cardData.avatarUrl} alt={cardData.fullName} className="w-24 h-24 rounded-lg object-cover border-2 border-white/20 shadow-xl" /> : <div className="w-24 h-24 rounded-lg bg-white/10 border-2 border-white/20 flex items-center justify-center text-3xl font-bold text-white shadow-xl">
-                        {cardData.fullName.charAt(0)}
-                      </div>}
-                  </div>
+                <div className="relative h-full p-6" style={{ position: 'relative' }}>
+                  {(() => {
+                    const content = cardData as any;
+                    const config = (content as any).cardConfig || {};
+                    const positions = config.positions || {
+                      avatar: { x: 20, y: 60 },
+                      name: { x: 140, y: 60 },
+                      jobTitle: { x: 140, y: 90 },
+                      company: { x: 140, y: 115 },
+                      email: { x: 140, y: 150 },
+                      phone: { x: 140, y: 175 },
+                    };
 
-                  {/* User Info */}
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-white mb-1 truncate">
-                      {cardData.fullName}
-                    </h2>
-                    {cardData.jobTitle && <p className="text-sm text-white/80 mb-0.5 truncate">
-                        {cardData.jobTitle}
-                      </p>}
-                    {cardData.company && <p className="text-xs text-white/60 mb-3 truncate">
-                        {cardData.company}
-                      </p>}
-                    
-                    <div className="space-y-1.5">
-                      {cardData.email && <div className="flex items-center gap-2 text-white/90 text-xs">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{cardData.email}</span>
-                        </div>}
-                      {cardData.phone && <div className="flex items-center gap-2 text-white/90 text-xs">
-                          <Phone className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{cardData.phone}</span>
-                        </div>}
-                    </div>
-                  </div>
+                    return (
+                      <>
+                        {/* Avatar */}
+                        {cardData.avatarUrl && (
+                          <div style={{ position: 'absolute', left: `${positions.avatar?.x || 20}px`, top: `${positions.avatar?.y || 60}px` }}>
+                            <img 
+                              src={cardData.avatarUrl} 
+                              alt={cardData.fullName} 
+                              className="rounded-lg object-cover border-2 border-white/20 shadow-xl"
+                              style={{ width: `${config.avatarSize || 96}px`, height: `${config.avatarSize || 96}px` }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Name */}
+                        <div style={{ position: 'absolute', left: `${positions.name?.x || 140}px`, top: `${positions.name?.y || 60}px` }}>
+                          <h2 className="font-bold text-white" style={{ fontSize: `${(config.fontSize || 16) + 4}px` }}>
+                            {cardData.fullName}
+                          </h2>
+                        </div>
+
+                        {/* Job Title */}
+                        {cardData.jobTitle && (config.showJobTitle !== false) && (
+                          <div style={{ position: 'absolute', left: `${positions.jobTitle?.x || 140}px`, top: `${positions.jobTitle?.y || 90}px` }}>
+                            <p className="text-white/80" style={{ fontSize: `${(config.fontSize || 16) - 2}px` }}>
+                              {cardData.jobTitle}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Company */}
+                        {cardData.company && (config.showCompany !== false) && (
+                          <div style={{ position: 'absolute', left: `${positions.company?.x || 140}px`, top: `${positions.company?.y || 115}px` }}>
+                            <p className="text-white/60" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>
+                              {cardData.company}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Email */}
+                        {cardData.email && (config.showEmail !== false) && (
+                          <div style={{ position: 'absolute', left: `${positions.email?.x || 140}px`, top: `${positions.email?.y || 150}px` }} className="flex items-center gap-2">
+                            <Mail className="w-3 h-3 flex-shrink-0 text-white/90" />
+                            <span className="text-white/90" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>{cardData.email}</span>
+                          </div>
+                        )}
+
+                        {/* Phone */}
+                        {cardData.phone && (config.showPhone !== false) && (
+                          <div style={{ position: 'absolute', left: `${positions.phone?.x || 140}px`, top: `${positions.phone?.y || 175}px` }} className="flex items-center gap-2">
+                            <Phone className="w-3 h-3 flex-shrink-0 text-white/90" />
+                            <span className="text-white/90" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>{cardData.phone}</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

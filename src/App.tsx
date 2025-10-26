@@ -13,7 +13,7 @@ import { DashboardRouter } from "./pages/DashboardRouter";
 import { OnboardingNew } from "./pages/OnboardingNew";
 import { Analytics } from "./pages/Analytics";
 import { EditorNew } from "./pages/EditorNew";
-import { CardEditor } from "./pages/CardEditor";
+import { CardEditorNew } from "./pages/CardEditorNew";
 import { PublicProfile } from "./pages/PublicProfile";
 import { MyCard } from "./pages/mycard";
 import { EmailSignature } from "./pages/EmailSignature";
@@ -77,7 +77,7 @@ const App = () => (
               path="/card-editor"
               element={
                 <ProtectedRoute>
-                  <CardEditor />
+                  <CardEditorNew />
                 </ProtectedRoute>
               }
             />

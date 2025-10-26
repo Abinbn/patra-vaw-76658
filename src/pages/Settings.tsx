@@ -61,6 +61,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Json } from '@/integrations/supabase/types';
 
 interface Profile {
   id: string;
@@ -69,6 +70,9 @@ interface Profile {
   job_title: string;
   avatar_url: string;
   created_at: string;
+  timezone?: string;
+  invite_parameters?: Json;
+  account_type?: string;
 }
 
 export const Settings: React.FC = () => {

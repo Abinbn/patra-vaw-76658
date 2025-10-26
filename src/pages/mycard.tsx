@@ -295,14 +295,25 @@ export const MyCard: React.FC = () => {
           </p>
         </div>
 
-                {/* Btn below the Card */}
-                <button  onClick={() => {
-                    window.location.href = cardUrl; 
-                  }}
-                className="inline-block px-5 py-2 mt-4 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
-                >
-                {cardData.fullName}'s Profile
-                </button>
+        {/* Buttons below the Card */}
+        <div className="flex gap-3 mt-4 justify-center">
+          <button  
+            onClick={() => {
+              window.location.href = cardUrl; 
+            }}
+            className="inline-block px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+          >
+            {cardData.fullName}'s Profile
+          </button>
+          
+          <button  
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+          >
+            <Share2 className="w-4 h-4" />
+            Share
+          </button>
+        </div>
 
         
       </main>

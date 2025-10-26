@@ -268,10 +268,18 @@ export const Templates: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => navigate('/editor')}
+                  onClick={() => navigate('/card-editor')}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Edit Card
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/editor')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Edit Content
                 </Button>
                 <Button 
                   variant="outline" 

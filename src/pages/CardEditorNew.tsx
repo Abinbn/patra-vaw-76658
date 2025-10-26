@@ -34,6 +34,11 @@ interface CardConfig {
   backgroundColor: string;
   backgroundPattern: 'none' | 'dots' | 'grid' | 'waves';
   backgroundImage: string;
+  backBackgroundColor: string;
+  backBackgroundPattern: 'none' | 'dots' | 'grid' | 'waves';
+  backBackgroundImage: string;
+  qrCodeSize: number;
+  qrCodeStyle: 'square' | 'rounded';
   positions: {
     avatar: ElementPosition;
     name: ElementPosition;
@@ -41,6 +46,9 @@ interface CardConfig {
     company: ElementPosition;
     email: ElementPosition;
     phone: ElementPosition;
+    qrCode: ElementPosition;
+  };
+  backPositions: {
     qrCode: ElementPosition;
   };
 }
@@ -55,6 +63,10 @@ const defaultPositions = {
   qrCode: { x: 320, y: 80 },
 };
 
+const defaultBackPositions = {
+  qrCode: { x: 140, y: 70 },
+};
+
 export const CardEditorNew: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,6 +74,7 @@ export const CardEditorNew: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [cardData, setCardData] = useState<any>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [cardConfig, setCardConfig] = useState<CardConfig>({
     cardWidth: 400,
     cardHeight: 250,
@@ -76,7 +89,13 @@ export const CardEditorNew: React.FC = () => {
     backgroundColor: '#1e293b',
     backgroundPattern: 'none',
     backgroundImage: '',
+    backBackgroundColor: '#1e293b',
+    backBackgroundPattern: 'none',
+    backBackgroundImage: '',
+    qrCodeSize: 110,
+    qrCodeStyle: 'square',
     positions: defaultPositions,
+    backPositions: defaultBackPositions,
   });
 
   useEffect(() => {
@@ -104,6 +123,7 @@ export const CardEditorNew: React.FC = () => {
             ...cardConfig,
             ...content.cardConfig,
             positions: content.cardConfig.positions || defaultPositions,
+            backPositions: content.cardConfig.backPositions || defaultBackPositions,
           });
         }
       }
@@ -159,16 +179,29 @@ export const CardEditorNew: React.FC = () => {
     const { active, delta } = event;
     const elementId = active.id as string;
     
-    setCardConfig((prev) => ({
-      ...prev,
-      positions: {
-        ...prev.positions,
-        [elementId]: {
-          x: prev.positions[elementId as keyof typeof prev.positions].x + delta.x,
-          y: prev.positions[elementId as keyof typeof prev.positions].y + delta.y,
+    if (cardSide === 'front') {
+      setCardConfig((prev) => ({
+        ...prev,
+        positions: {
+          ...prev.positions,
+          [elementId]: {
+            x: prev.positions[elementId as keyof typeof prev.positions].x + delta.x,
+            y: prev.positions[elementId as keyof typeof prev.positions].y + delta.y,
+          },
         },
-      },
-    }));
+      }));
+    } else {
+      setCardConfig((prev) => ({
+        ...prev,
+        backPositions: {
+          ...prev.backPositions,
+          [elementId]: {
+            x: prev.backPositions[elementId as keyof typeof prev.backPositions].x + delta.x,
+            y: prev.backPositions[elementId as keyof typeof prev.backPositions].y + delta.y,
+          },
+        },
+      }));
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,6 +275,43 @@ export const CardEditorNew: React.FC = () => {
     if (!cardData) return null;
     
     const content = cardData.content_json as any;
+
+    if (cardSide === 'back') {
+      return (
+        <div className="flex items-center justify-center min-h-[500px] bg-muted rounded-lg p-8">
+          <DndContext onDragEnd={handleDragEnd}>
+            <div style={{
+              ...getBackgroundStyle(),
+              backgroundColor: cardConfig.backBackgroundColor,
+              backgroundImage: cardConfig.backBackgroundImage ? `url(${cardConfig.backBackgroundImage})` : 
+                cardConfig.backBackgroundPattern === 'dots' ? 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)' :
+                cardConfig.backBackgroundPattern === 'grid' ? 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' :
+                cardConfig.backBackgroundPattern === 'waves' ? 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)' :
+                cardConfig.backBackgroundColor,
+              backgroundSize: cardConfig.backBackgroundPattern === 'grid' ? '20px 20px' : cardConfig.backBackgroundImage ? 'cover' : undefined,
+            }} className="shadow-2xl">
+              {/* QR Code */}
+              {cardConfig.showQRCode && (
+                <DraggableElement
+                  id="qrCode"
+                  position={cardConfig.backPositions.qrCode}
+                  isSelected={selectedElement === 'qrCode'}
+                  onSelect={() => setSelectedElement('qrCode')}
+                >
+                  <div className={`bg-white p-2 shadow-2xl ${cardConfig.qrCodeStyle === 'rounded' ? 'rounded-2xl' : 'rounded-lg'}`}>
+                    <QRCode 
+                      value={`${window.location.origin}/${cardData.vanity_url}`} 
+                      size={cardConfig.qrCodeSize} 
+                      level="M"
+                    />
+                  </div>
+                </DraggableElement>
+              )}
+            </div>
+          </DndContext>
+        </div>
+      );
+    }
 
     return (
       <div className="flex items-center justify-center min-h-[500px] bg-muted rounded-lg p-8">
@@ -427,7 +497,25 @@ export const CardEditorNew: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Interactive Canvas */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Interactive Canvas</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Interactive Canvas</h2>
+              <div className="flex gap-2">
+                <Button
+                  variant={cardSide === 'front' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCardSide('front')}
+                >
+                  Front
+                </Button>
+                <Button
+                  variant={cardSide === 'back' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCardSide('back')}
+                >
+                  Back
+                </Button>
+              </div>
+            </div>
             <p className="text-sm text-muted-foreground mb-4">
               Click and drag elements to reposition them
             </p>
@@ -539,53 +627,167 @@ export const CardEditorNew: React.FC = () => {
 
               <TabsContent value="style" className="space-y-6">
                 <Card className="p-6 space-y-6">
-                  <div>
-                    <Label>Background Color</Label>
-                    <Input
-                      type="color"
-                      value={cardConfig.backgroundColor}
-                      onChange={(e) => setCardConfig({ ...cardConfig, backgroundColor: e.target.value })}
-                      className="mt-2 h-12 cursor-pointer"
-                    />
-                  </div>
+                  {cardSide === 'front' ? (
+                    <>
+                      <div>
+                        <Label>Front Background Color</Label>
+                        <Input
+                          type="color"
+                          value={cardConfig.backgroundColor}
+                          onChange={(e) => setCardConfig({ ...cardConfig, backgroundColor: e.target.value })}
+                          className="mt-2 h-12 cursor-pointer"
+                        />
+                      </div>
 
-                  <div>
-                    <Label>Background Pattern</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
-                        <Button
-                          key={pattern}
-                          variant={cardConfig.backgroundPattern === pattern ? 'default' : 'outline'}
-                          onClick={() => setCardConfig({ ...cardConfig, backgroundPattern: pattern })}
-                          className="capitalize"
-                        >
-                          {pattern}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                      <div>
+                        <Label>Front Background Pattern</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
+                            <Button
+                              key={pattern}
+                              variant={cardConfig.backgroundPattern === pattern ? 'default' : 'outline'}
+                              onClick={() => setCardConfig({ ...cardConfig, backgroundPattern: pattern })}
+                              className="capitalize"
+                            >
+                              {pattern}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
 
-                  <div>
-                    <Label>Background Image</Label>
-                    <div className="mt-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="cursor-pointer"
-                      />
-                      {cardConfig.backgroundImage && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCardConfig({ ...cardConfig, backgroundImage: '' })}
+                      <div>
+                        <Label>Front Background Image</Label>
+                        <div className="mt-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="cursor-pointer"
+                          />
+                          {cardConfig.backgroundImage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCardConfig({ ...cardConfig, backgroundImage: '' })}
+                              className="mt-2"
+                            >
+                              Remove Image
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <Label>Back Background Color</Label>
+                        <Input
+                          type="color"
+                          value={cardConfig.backBackgroundColor}
+                          onChange={(e) => setCardConfig({ ...cardConfig, backBackgroundColor: e.target.value })}
+                          className="mt-2 h-12 cursor-pointer"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Back Background Pattern</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
+                            <Button
+                              key={pattern}
+                              variant={cardConfig.backBackgroundPattern === pattern ? 'default' : 'outline'}
+                              onClick={() => setCardConfig({ ...cardConfig, backBackgroundPattern: pattern })}
+                              className="capitalize"
+                            >
+                              {pattern}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Back Background Image</Label>
+                        <div className="mt-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+
+                              try {
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `${user?.id}-card-back-bg-${Date.now()}.${fileExt}`;
+                                const filePath = `${fileName}`;
+
+                                const { error: uploadError } = await supabase.storage
+                                  .from('avatars')
+                                  .upload(filePath, file);
+
+                                if (uploadError) throw uploadError;
+
+                                const { data: { publicUrl } } = supabase.storage
+                                  .from('avatars')
+                                  .getPublicUrl(filePath);
+
+                                setCardConfig({ ...cardConfig, backBackgroundImage: publicUrl });
+                                
+                                toast({
+                                  title: 'Success',
+                                  description: 'Back background image uploaded!',
+                                });
+                              } catch (error: any) {
+                                toast({
+                                  title: 'Error',
+                                  description: error.message,
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {cardConfig.backBackgroundImage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCardConfig({ ...cardConfig, backBackgroundImage: '' })}
+                              className="mt-2"
+                            >
+                              Remove Image
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>QR Code Size: {cardConfig.qrCodeSize}px</Label>
+                        <Slider
+                          value={[cardConfig.qrCodeSize]}
+                          onValueChange={([value]) => setCardConfig({ ...cardConfig, qrCodeSize: value })}
+                          min={80}
+                          max={200}
+                          step={10}
                           className="mt-2"
-                        >
-                          Remove Image
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                        />
+                      </div>
+
+                      <div>
+                        <Label>QR Code Style</Label>
+                        <div className="flex gap-2 mt-2">
+                          {(['square', 'rounded'] as const).map((style) => (
+                            <Button
+                              key={style}
+                              variant={cardConfig.qrCodeStyle === style ? 'default' : 'outline'}
+                              onClick={() => setCardConfig({ ...cardConfig, qrCodeStyle: style })}
+                              className="flex-1 capitalize"
+                            >
+                              {style}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <Label>Font Size: {cardConfig.fontSize}px</Label>

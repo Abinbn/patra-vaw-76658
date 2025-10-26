@@ -6,6 +6,17 @@ import { Edit, Share2, Printer, FlipHorizontal, ArrowLeft, Nfc, Mail, Phone } fr
 import { toast } from '@/hooks/use-toast';
 import QRCode from 'react-qr-code';
 import { updateOGMetaTags, generateShareText, shareProfile } from '@/lib/og-utils';
+
+interface CardContent {
+  fullName: string;
+  jobTitle: string;
+  company: string;
+  email: string;
+  phone: string;
+  avatarUrl: string;
+  cardConfig?: any;
+}
+
 interface CardData {
   fullName: string;
   jobTitle: string;
@@ -14,6 +25,7 @@ interface CardData {
   phone: string;
   avatarUrl: string;
   vanityUrl: string;
+  cardConfig?: any;
 }
 export const MyCard: React.FC = () => {
   const {
@@ -69,7 +81,8 @@ export const MyCard: React.FC = () => {
           email: content.email || '',
           phone: content.phone || '',
           avatarUrl: content.avatarUrl || '',
-          vanityUrl: card.vanity_url || ''
+          vanityUrl: card.vanity_url || '',
+          cardConfig: content.cardConfig || null,
         });
         setLoading(false);
       } catch (err) {
@@ -197,9 +210,15 @@ export const MyCard: React.FC = () => {
 
         {/* 3D Card Container */}
         <div className="perspective-card">
-          <div className={`card-container ${flipped ? 'flipped' : ''}`} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => setFlipped(!flipped)} style={{
-          transform: isHovered && !flipped ? 'translateY(-8px) rotateX(2deg) rotateY(-2deg)' : isHovered && flipped ? 'translateY(-8px) rotateX(2deg) rotateY(182deg)' : flipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-        }}>
+          <div className={`card-container ${flipped ? 'flipped' : ''}`} 
+            onMouseEnter={() => setIsHovered(true)} 
+            onMouseLeave={() => setIsHovered(false)} 
+            onClick={() => setFlipped(!flipped)} 
+            style={{
+              width: `${cardData.cardConfig?.cardWidth || 400}px`,
+              height: `${cardData.cardConfig?.cardHeight || 250}px`,
+              transform: isHovered && !flipped ? 'translateY(-8px) rotateX(2deg) rotateY(-2deg)' : isHovered && flipped ? 'translateY(-8px) rotateX(2deg) rotateY(182deg)' : flipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+            }}>
             {/* Front Side */}
             <div className="card-face card-front">
               <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black rounded-xl overflow-hidden">
@@ -296,8 +315,19 @@ export const MyCard: React.FC = () => {
             </div>
 
             {/* Back Side */}
-            <div className="card-face card-back">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black rounded-xl overflow-hidden">
+            <div className="card-face card-back" style={{
+              borderRadius: `${cardData.cardConfig?.borderRadius || 12}px`,
+            }}>
+              <div className="absolute inset-0 rounded-xl overflow-hidden" style={{
+                backgroundColor: cardData.cardConfig?.backBackgroundColor || cardData.cardConfig?.backgroundColor || '#1e293b',
+                backgroundImage: cardData.cardConfig?.backBackgroundImage ? `url(${cardData.cardConfig.backBackgroundImage})` : 
+                  cardData.cardConfig?.backBackgroundPattern === 'dots' ? 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)' :
+                  cardData.cardConfig?.backBackgroundPattern === 'grid' ? 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' :
+                  cardData.cardConfig?.backBackgroundPattern === 'waves' ? 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)' :
+                  'linear-gradient(135deg, #1e293b, #0f172a)',
+                backgroundSize: cardData.cardConfig?.backBackgroundPattern === 'grid' ? '20px 20px' : 'cover',
+                borderRadius: `${cardData.cardConfig?.borderRadius || 12}px`,
+              }}>
                 {/* Subtle texture overlay */}
                 <div className="absolute inset-0 opacity-5" style={{
                 backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulance type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E")'
@@ -308,11 +338,31 @@ export const MyCard: React.FC = () => {
                   Patra
                 </div>
 
-                {/* QR Code centered */}
+                {/* QR Code with saved position */}
                 <div className="relative h-full flex flex-col items-center justify-center p-6">
-                  <div className="bg-white p-4 rounded-lg shadow-2xl mt-4">
-                    <QRCode value={cardUrl} size={110} level="M" fgColor="#000000" bgColor="#ffffff" />
-                  </div>
+                  {(() => {
+                    const qrPos = cardData.cardConfig?.backPositions?.qrCode || { x: 0, y: 0 };
+                    const qrSize = cardData.cardConfig?.qrCodeSize || 110;
+                    const qrStyle = cardData.cardConfig?.qrCodeStyle || 'square';
+                    
+                    return (
+                      <div style={{ 
+                        position: qrPos.x !== 0 || qrPos.y !== 0 ? 'absolute' : 'relative',
+                        left: qrPos.x !== 0 ? `${qrPos.x}px` : undefined,
+                        top: qrPos.y !== 0 ? `${qrPos.y}px` : undefined,
+                      }}>
+                        <div className={`bg-white p-4 shadow-2xl ${qrStyle === 'rounded' ? 'rounded-2xl' : 'rounded-lg'}`}>
+                          <QRCode 
+                            value={cardUrl} 
+                            size={qrSize} 
+                            level="M" 
+                            fgColor="#000000" 
+                            bgColor="#ffffff" 
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Thermochromic ink effect username */}
                   <p className="mt-4 text-xs text-white/30 font-mono tracking-wider" style={{

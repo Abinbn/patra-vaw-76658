@@ -246,9 +246,9 @@ export const MyCard: React.FC = () => {
           <Button variant="ghost" size="icon" onClick={() => setFlipped(!flipped)} className="hover:bg-slate-100" title="Flip Card">
             <FlipHorizontal className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/editor')} className="hover:bg-slate-100" title="Edit Card">
+          {/* <Button variant="ghost" size="icon" onClick={() => navigate('/editor')} className="hover:bg-slate-100" title="Edit Card">
             <Edit className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button variant="ghost" size="icon" onClick={handleShare} className="hover:bg-slate-100" title="Share Card">
             <Share2 className="h-4 w-4" />
           </Button>

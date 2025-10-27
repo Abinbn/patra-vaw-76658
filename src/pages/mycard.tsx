@@ -177,7 +177,7 @@ export const MyCard: React.FC = () => {
         </div>
       </div>;
   }
-  const cardUrl = `https://cardcraft-omega.vercel.app/${username}`;
+  const cardUrl = `${window.location.origin}/${username}`;
   return <div className="min-h-screen bg-[#fafafa] relative overflow-hidden">
       {/* Micro-dotted canvas background */}
       <div className="absolute inset-0 opacity-30" style={{
@@ -405,9 +405,7 @@ export const MyCard: React.FC = () => {
           </button>
           
           <button  
-            onClick={() => {
-              window.location.href = cardUrl; 
-            }}
+            onClick={() => navigate(`/${username}`)}
             className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
           >
             <User className="w-4 h-4" />

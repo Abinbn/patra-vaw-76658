@@ -101,6 +101,8 @@ export const Templates: React.FC = () => {
         const updatedContentJson = {
           ...contentWithoutTheme,
           customCSS: template.style.customCSS || '',
+          bannerType: template.style.backgroundColor ? 'color' : template.style.backgroundPattern ? 'pattern' : undefined,
+          bannerValue: template.style.backgroundColor || template.style.backgroundPattern || undefined,
         };
 
         const { error } = await supabase

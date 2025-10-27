@@ -409,13 +409,16 @@ export const OnboardingNew: React.FC = () => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message || 'Failed to upload avatar');
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
@@ -431,7 +434,7 @@ export const OnboardingNew: React.FC = () => {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Upload failed",
-        description: error.message,
+        description: error.message || "Unable to upload avatar. Please try again.",
         variant: "destructive"
       });
     }

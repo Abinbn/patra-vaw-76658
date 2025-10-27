@@ -233,10 +233,9 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
                   background: 'linear-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary) / 0.1) 1px, transparent 1px)',
                   backgroundSize: '20px 20px'
                 }
-              : {}),
-            ...(!cardData.bannerType || cardData.bannerType === 'gradient'
+              : cardData.bannerType === 'gradient'
               ? { background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.1))' }
-              : {})
+              : { backgroundColor: 'hsl(var(--muted))' })
           }}
         ></div>
         
@@ -401,50 +400,7 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
             {/* Render filled sections */}
             {filledSections.map(sectionId => sectionMap[sectionId])}
             
-            {/* Separator if there are empty sections */}
-            {emptySections.length > 0 && filledSections.length > 0 && (
-              <div className="my-6 border-t border-border/50" />
-            )}
-            
-            {/* Empty sections - clickable cards */}
-            {emptySections.length > 0 && (
-              <Card className="p-4">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add More Information</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {emptySections.map(sectionId => {
-                    const sectionLabels: Record<string, { icon: any; label: string }> = {
-                      contact: { icon: Phone, label: 'Contact' },
-                      verified: { icon: Check, label: 'Social' },
-                      links: { icon: Globe, label: 'Links' },
-                      achievements: { icon: Award, label: 'Achievements' },
-                      testimonials: { icon: MessageCircle, label: 'Testimonials' },
-                      interests: { icon: Heart, label: 'Interests' },
-                      gallery: { icon: ImageIcon, label: 'Gallery' },
-                      languages: { icon: Globe, label: 'Languages' },
-                    };
-                    
-                    const section = sectionLabels[sectionId];
-                    if (!section) return null;
-                    
-                    const Icon = section.icon;
-                    
-                    return (
-                      <button
-                        key={sectionId}
-                        onClick={() => {
-                          // Navigate to editor with section focused
-                          window.location.href = '/editor';
-                        }}
-                        className="flex flex-col items-center justify-center p-3 rounded-lg border border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
-                      >
-                        <Icon className="w-5 h-5 text-muted-foreground mb-1" />
-                        <span className="text-xs text-muted-foreground">{section.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
+            {/* Note: Empty sections "Add More Information" removed - only show in editor */}
           </>
         );
       })()}

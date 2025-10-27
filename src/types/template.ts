@@ -7,6 +7,8 @@ export interface CardTemplate {
   style: {
     layout: 'classic' | 'modern' | 'minimal' | 'bento' | 'magazine' | 'creative' | 'portrait';
     colorScheme?: string;
+    backgroundColor?: string;
+    backgroundPattern?: 'dots' | 'lines' | 'waves' | 'grid' | 'none';
     cardStyle?: React.CSSProperties;
     headerStyle?: React.CSSProperties;
     sectionStyle?: React.CSSProperties;

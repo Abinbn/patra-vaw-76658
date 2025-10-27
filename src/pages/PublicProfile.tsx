@@ -81,6 +81,9 @@ export const PublicProfile: React.FC = () => {
       }
 
       try {
+        // Get current user to check if they're the owner
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
         // Fetch card by vanity_url with profile info
         const { data: card, error } = await supabase
           .from('digital_cards')
@@ -95,10 +98,17 @@ export const PublicProfile: React.FC = () => {
           `)
           .eq('vanity_url', username)
           .eq('is_active', true)
-          .eq('is_approved', true)
           .single();
 
         if (error || !card) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        // Allow owner to view their own card even if not approved
+        const isOwner = currentUser && card.owner_user_id === currentUser.id;
+        if (!card.is_approved && !isOwner) {
           setNotFound(true);
           setLoading(false);
           return;

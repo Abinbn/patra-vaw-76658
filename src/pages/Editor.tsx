@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -124,7 +124,9 @@ const paymentPlatforms = [
 export const Editor: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setSaving] = useState(false);
+  const [vanityUrl, setVanityUrl] = useState<string>('');
   const [cardData, setCardData] = useState<CardData>({
     fullName: '',
     about: '',
@@ -155,6 +157,8 @@ export const Editor: React.FC = () => {
   const [newSocialLink, setNewSocialLink] = useState({ platform: '', url: '' });
   const [newPaymentLink, setNewPaymentLink] = useState({ platform: '', url: '' });
   const [newCustomLink, setNewCustomLink] = useState({ title: '', url: '' });
+  
+  const currentTab = searchParams.get('tab') || 'personal';
 
   useEffect(() => {
     // Auto-detect timezone
@@ -204,6 +208,11 @@ export const Editor: React.FC = () => {
         .eq('owner_user_id', user.id)
         .maybeSingle();
 
+      // Set vanity URL for display
+      if (card?.vanity_url) {
+        setVanityUrl(card.vanity_url);
+      }
+
       // Ensure vanity URL exists - if not, create one
       if (card && !card.vanity_url) {
         const generateRandomUsername = () => {
@@ -221,6 +230,7 @@ export const Editor: React.FC = () => {
           .from('digital_cards')
           .update({ vanity_url: newUsername })
           .eq('owner_user_id', user.id);
+        setVanityUrl(newUsername);
       }
 
       if (profile || card) {
@@ -228,12 +238,12 @@ export const Editor: React.FC = () => {
         
         setCardData(prev => ({
           ...prev,
-          fullName: profile?.display_name || prev.fullName,
+          fullName: profile?.display_name || cardContent.name || cardContent.fullName || prev.fullName,
           email: user.email || prev.email,
           phone: profile?.phone || cardContent.phone || prev.phone,
           jobTitle: profile?.job_title || cardContent.jobTitle || prev.jobTitle,
           company: profile?.company_name || cardContent.company || prev.company,
-          about: profile?.bio || cardContent.bio || prev.about,
+          about: profile?.bio || cardContent.bio || cardContent.about || prev.about,
           // Load other card content if available
           socialLinks: cardContent.socialLinks || prev.socialLinks,
           paymentLinks: cardContent.paymentLinks || prev.paymentLinks,
@@ -454,7 +464,7 @@ export const Editor: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Form Section */}
           <div className="space-y-6">
-            <Tabs defaultValue="personal" className="w-full">
+            <Tabs value={currentTab} onValueChange={(val) => setSearchParams({ tab: val })} className="w-full">
               <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="personal" className="text-xs">
                   <User className="w-4 h-4" />
@@ -494,13 +504,13 @@ export const Editor: React.FC = () => {
                       <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
-                        value={user?.user_metadata?.username || ''}
+                        value={vanityUrl || 'Loading...'}
                         disabled
                         className="bg-muted"
                         placeholder="Your username"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Your unique username for your card URL
+                        Your unique username: {vanityUrl ? `patra.me/${vanityUrl}` : 'Loading...'}
                       </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

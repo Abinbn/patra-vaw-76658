@@ -236,27 +236,52 @@ export const MyCard: React.FC = () => {
       </div>
 
       {/* Header */}
-      <header className="relative z-50 px-6 py-5 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm overflow-x-auto">
-        <div className="flex items-center justify-between gap-2 min-w-max">
-          <div className="text-2xl font-bold text-slate-900">
-            <span className="text-slate-600">P</span>atra
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setFlipped(!flipped)} className="hover:bg-slate-100" title="Flip Card">
-            <FlipHorizontal className="h-4 w-4" />
-          </Button>
-          {/* <Button variant="ghost" size="icon" onClick={() => navigate('/editor')} className="hover:bg-slate-100" title="Edit Card">
-            <Edit className="h-4 w-4" />
-          </Button> */}
-          <Button variant="ghost" size="icon" onClick={handleShare} className="hover:bg-slate-100" title="Share Card">
-            <Share2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handlePrint} className="hover:bg-slate-100" title="Print Card">
-            <Printer className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
+<header className="relative z-50 px-6 py-5 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
+  <div className="flex items-center justify-between gap-4">
+    <div className="text-2xl font-bold text-slate-900">
+      <span className="text-slate-600">P</span>atra
+    </div>
+    
+    <div className="flex gap-2">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => setFlipped(!flipped)} 
+        className="hover:bg-slate-200/80 hover:text-slate-900 transition-colors" 
+        title="Flip Card"
+      >
+        <FlipHorizontal className="h-4 w-4" />
+      </Button>
+      {/* <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => navigate('/editor')} 
+        className="hover:bg-slate-200/80 hover:text-slate-900 transition-colors" 
+        title="Edit Card"
+      >
+        <Edit className="h-4 w-4" />
+      </Button> */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={handleShare} 
+        className="hover:bg-slate-200/80 hover:text-slate-900 transition-colors" 
+        title="Share Card"
+      >
+        <Share2 className="h-4 w-4" />
+      </Button>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={handlePrint} 
+        className="hover:bg-slate-200/80 hover:text-slate-900 transition-colors" 
+        title="Print Card"
+      >
+        <Printer className="h-4 w-4" />
+      </Button>
+    </div>
+  </div>
+</header>
 
       {/* Main Content */}
       <main className="relative flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-8">

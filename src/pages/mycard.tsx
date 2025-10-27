@@ -236,8 +236,8 @@ export const MyCard: React.FC = () => {
       </div>
 
       {/* Header */}
-      <header className="relative z-50 px-6 py-5 flex items-center justify-between border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
+      <header className="relative z-50 px-6 py-5 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm overflow-x-auto">
+        <div className="flex items-center justify-between gap-2 min-w-max">
           <div className="text-2xl font-bold text-slate-900">
             <span className="text-slate-600">P</span>atra
           </div>

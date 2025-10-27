@@ -309,8 +309,8 @@ export const PublicProfile: React.FC = () => {
       )}
       
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b overflow-x-auto">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between min-w-max">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Home

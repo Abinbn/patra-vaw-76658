@@ -2860,8 +2860,8 @@ ${cardData.achievements.map(a => `- ${a.title} from ${a.issuer} (${a.date})`).jo
       }} />}
       
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="px-4 h-16 flex items-center justify-between">
+      <header className="border-b border-border bg-card sticky top-0 z-50 overflow-x-auto">
+        <div className="px-4 h-16 flex items-center justify-between min-w-max">
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"

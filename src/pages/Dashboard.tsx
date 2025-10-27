@@ -106,8 +106,8 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-card border-b border-border overflow-x-auto">
+        <div className="container mx-auto px-4 py-4 min-w-max">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <CreditCard className="w-8 h-8 text-primary" />

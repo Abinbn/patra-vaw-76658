@@ -351,8 +351,8 @@ export const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Modern Header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 overflow-x-auto">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 min-w-max">
           <div className="flex items-center justify-between h-16 sm:h-20">
             <div className="flex items-center gap-3 sm:gap-4">
               <Button

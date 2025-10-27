@@ -3,6 +3,19 @@ import { MapPin } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+// Fix for default marker icons in Leaflet
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
 const mapStyles = `
   .leaflet-control-attribution,
   .leaflet-control-attribution a {
@@ -29,6 +42,7 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   if (!address && !latitude && !longitude && !mapUrl) return null;
 
@@ -63,15 +77,29 @@ export const AddressMapDisplay: React.FC<AddressMapDisplayProps> = ({
       }).addTo(map);
 
       mapRef.current = map;
+
+      // Add default Leaflet marker at the coordinates
+      markerRef.current = L.marker([latitude!, longitude!]).addTo(map);
+      
+      // Add popup with address if available
+      if (address) {
+        markerRef.current.bindPopup(`
+          <div style="font-family: system-ui, -apple-system, sans-serif; padding: 4px;">
+            <strong style="display: block; margin-bottom: 4px;">Location</strong>
+            <span style="font-size: 13px;">${address}</span>
+          </div>
+        `);
+      }
     }
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        markerRef.current = null;
       }
     };
-  }, [showMap, hasCoordinates, latitude, longitude]);
+  }, [showMap, hasCoordinates, latitude, longitude, address]);
 
   return (
     <div className={`space-y-3 ${className}`}>

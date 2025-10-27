@@ -100,7 +100,7 @@ export const ContactSection: React.FC<SectionProps> = ({ cardData, showAIButton,
             />
             <MessageCircle className="w-4 h-4 mr-2 relative z-10 group-hover:text-white transition-colors duration-300" />
             <span className="relative z-10 font-medium group-hover:text-white transition-colors duration-300">
-              Chat with me - AI
+              Chat with mini me - AI
             </span>
           </Button>
         )}

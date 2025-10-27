@@ -40,6 +40,8 @@ export const MyCard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [flipped, setFlipped] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showProfilePreview, setShowProfilePreview] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
   useEffect(() => {
     if (username) {
       document.title = `${username} | Patra`;
@@ -118,6 +120,25 @@ export const MyCard: React.FC = () => {
     }
   }, [cardData, username, ogDescription]);
 
+  // Scroll detection for profile preview
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show profile preview when scrolling up and past 100px
+      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+        setShowProfilePreview(true);
+      } else if (currentScrollY > lastScrollY || currentScrollY <= 100) {
+        setShowProfilePreview(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
   const handleShare = async () => {
     const url = `${window.location.origin}/${username}?card`;
     const shareText = generateShareText(
@@ -184,6 +205,35 @@ export const MyCard: React.FC = () => {
       backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
       backgroundSize: '20px 20px'
     }}></div>
+
+      {/* Profile Preview - appears on scroll up */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-[60] bg-white border-b border-slate-200 shadow-lg transform transition-transform duration-500 ease-out ${
+          showProfilePreview ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
+        <div className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-4">
+            {cardData?.avatarUrl && (
+              <img 
+                src={cardData.avatarUrl} 
+                alt={cardData.fullName} 
+                className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
+              />
+            )}
+            <div>
+              <h3 className="font-semibold text-slate-900">{cardData?.fullName}</h3>
+              <p className="text-sm text-slate-500">{cardData?.jobTitle}</p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => navigate(`/${username}`)}
+            className="bg-slate-900 hover:bg-slate-800"
+          >
+            View Full Profile
+          </Button>
+        </div>
+      </div>
 
       {/* Header */}
       <header className="relative z-50 px-6 py-5 flex items-center justify-between border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">

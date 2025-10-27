@@ -120,23 +120,49 @@ export const MyCard: React.FC = () => {
     }
   }, [cardData, username, ogDescription]);
 
-  // Scroll detection for profile preview
+  // Scroll detection for profile preview (improved for mobile)
   useEffect(() => {
+    let ticking = false;
+    let scrollTimeout: NodeJS.Timeout;
+    
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Show profile preview when scrolling up and past 100px
-      if (currentScrollY < lastScrollY && currentScrollY > 100) {
-        setShowProfilePreview(true);
-      } else if (currentScrollY > lastScrollY || currentScrollY <= 100) {
-        setShowProfilePreview(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const scrollDifference = Math.abs(currentScrollY - lastScrollY);
+          
+          // Only trigger if scroll difference is significant (reduces jitter)
+          if (scrollDifference > 5) {
+            // Show profile preview when scrolling up and past 200px
+            if (currentScrollY < lastScrollY && currentScrollY > 200) {
+              setShowProfilePreview(true);
+            } else if (currentScrollY > lastScrollY || currentScrollY <= 150) {
+              setShowProfilePreview(false);
+            }
+            
+            setLastScrollY(currentScrollY);
+          }
+          
+          ticking = false;
+        });
+        
+        ticking = true;
       }
       
-      setLastScrollY(currentScrollY);
+      // Hide preview after user stops scrolling for 3 seconds
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        if (window.scrollY > 200) {
+          setShowProfilePreview(false);
+        }
+      }, 3000);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
   }, [lastScrollY]);
 
   const handleShare = async () => {
@@ -208,8 +234,8 @@ export const MyCard: React.FC = () => {
 
       {/* Profile Preview - appears on scroll up */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-[60] bg-white border-b border-slate-200 shadow-lg transform transition-transform duration-500 ease-out ${
-          showProfilePreview ? 'translate-y-0' : '-translate-y-full'
+        className={`fixed top-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-lg transform transition-all duration-300 ease-in-out ${
+          showProfilePreview ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
         }`}
       >
         <div className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">

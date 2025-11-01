@@ -177,7 +177,7 @@ ${signatureData.website ? `Card: ${signatureData.website}` : ''}
               </Button>
               <div className="h-8 w-px bg-slate-200"></div>
               <div className="text-2xl font-bold text-slate-900">
-                Card<span className="text-slate-600">Craft</span>
+                  <span className="text-slate-600">P</span>atra
               </div>
             </div>
           </div>

@@ -370,7 +370,7 @@ export const LocationSection: React.FC<SectionProps> = ({ cardData }) => {
                        cardData.longitude !== null && cardData.longitude !== undefined;
   
   const mapEmbedUrl = hasCoordinates
-    ? `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${cardData.latitude},${cardData.longitude}&zoom=15`
+    ? `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${cardData.latitude},${cardData.longitude}&zoom=15`
     : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(cardData.address || '')}`;
   
   const mapUrl = hasCoordinates

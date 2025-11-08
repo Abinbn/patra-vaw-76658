@@ -31,13 +31,22 @@ interface CardConfig {
   showJobTitle: boolean;
   fontSize: number;
   fontFamily: string;
+  textColor: string;
   borderRadius: number;
   backgroundColor: string;
   backgroundPattern: 'none' | 'dots' | 'grid' | 'waves';
   backgroundImage: string;
+  useGradient: boolean;
+  gradientColors: string[];
+  gradientDirection: 'to-r' | 'to-br' | 'to-b' | 'to-bl';
   backBackgroundColor: string;
   backBackgroundPattern: 'none' | 'dots' | 'grid' | 'waves';
   backBackgroundImage: string;
+  backUseGradient: boolean;
+  backGradientColors: string[];
+  backGradientDirection: 'to-r' | 'to-br' | 'to-b' | 'to-bl';
+  bannerImage: string;
+  bannerHeight: number;
   qrCodeSize: number;
   qrCodeStyle: 'square' | 'rounded';
   positions: {
@@ -88,13 +97,22 @@ export const CardEditorNew: React.FC = () => {
     showJobTitle: true,
     fontSize: 16,
     fontFamily: 'Inter',
+    textColor: '#ffffff',
     borderRadius: 12,
     backgroundColor: '#1e293b',
     backgroundPattern: 'none',
     backgroundImage: '',
+    useGradient: false,
+    gradientColors: ['#1e293b', '#334155'],
+    gradientDirection: 'to-br',
     backBackgroundColor: '#1e293b',
     backBackgroundPattern: 'none',
     backBackgroundImage: '',
+    backUseGradient: false,
+    backGradientColors: ['#1e293b', '#334155'],
+    backGradientDirection: 'to-br',
+    bannerImage: '',
+    bannerHeight: 120,
     qrCodeSize: 110,
     qrCodeStyle: 'square',
     positions: defaultPositions,
@@ -216,7 +234,7 @@ export const CardEditorNew: React.FC = () => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user?.id}-card-bg-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user?.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -243,7 +261,7 @@ export const CardEditorNew: React.FC = () => {
     }
   };
 
-  const getBackgroundStyle = () => {
+  const getBackgroundStyle = (isBack = false) => {
     const base: React.CSSProperties = {
       width: `${cardConfig.cardWidth}px`,
       height: `${cardConfig.cardHeight}px`,
@@ -252,17 +270,41 @@ export const CardEditorNew: React.FC = () => {
       overflow: 'hidden',
     };
 
-    if (cardConfig.backgroundImage) {
+    const bgImage = isBack ? cardConfig.backBackgroundImage : cardConfig.backgroundImage;
+    const bgColor = isBack ? cardConfig.backBackgroundColor : cardConfig.backgroundColor;
+    const bgPattern = isBack ? cardConfig.backBackgroundPattern : cardConfig.backgroundPattern;
+    const useGrad = isBack ? cardConfig.backUseGradient : cardConfig.useGradient;
+    const gradColors = isBack ? cardConfig.backGradientColors : cardConfig.gradientColors;
+    const gradDir = isBack ? cardConfig.backGradientDirection : cardConfig.gradientDirection;
+
+    // Background image takes priority
+    if (bgImage) {
       return {
         ...base,
-        backgroundImage: `url(${cardConfig.backgroundImage})`,
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       };
     }
 
+    // Gradient
+    if (useGrad && gradColors.length >= 2) {
+      const direction = {
+        'to-r': 'to right',
+        'to-br': 'to bottom right',
+        'to-b': 'to bottom',
+        'to-bl': 'to bottom left'
+      }[gradDir];
+      
+      return {
+        ...base,
+        backgroundImage: `linear-gradient(${direction}, ${gradColors.join(', ')})`,
+      };
+    }
+
+    // Pattern overlay
     const patterns = {
-      none: cardConfig.backgroundColor,
+      none: '',
       dots: `radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)`,
       grid: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
       waves: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)`,
@@ -270,9 +312,9 @@ export const CardEditorNew: React.FC = () => {
 
     return {
       ...base,
-      backgroundColor: cardConfig.backgroundColor,
-      backgroundImage: cardConfig.backgroundPattern !== 'none' ? patterns[cardConfig.backgroundPattern] : undefined,
-      backgroundSize: cardConfig.backgroundPattern === 'dots' ? '20px 20px' : cardConfig.backgroundPattern === 'grid' ? '20px 20px' : undefined,
+      backgroundColor: bgColor,
+      backgroundImage: bgPattern !== 'none' ? patterns[bgPattern] : undefined,
+      backgroundSize: bgPattern === 'dots' || bgPattern === 'grid' ? '20px 20px' : undefined,
     };
   };
 
@@ -285,16 +327,7 @@ export const CardEditorNew: React.FC = () => {
       return (
         <div className="flex items-center justify-center min-h-[500px] bg-muted rounded-lg p-8">
           <DndContext onDragEnd={handleDragEnd}>
-            <div style={{
-              ...getBackgroundStyle(),
-              backgroundColor: cardConfig.backBackgroundColor,
-              backgroundImage: cardConfig.backBackgroundImage ? `url(${cardConfig.backBackgroundImage})` : 
-                cardConfig.backBackgroundPattern === 'dots' ? 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)' :
-                cardConfig.backBackgroundPattern === 'grid' ? 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' :
-                cardConfig.backBackgroundPattern === 'waves' ? 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)' :
-                cardConfig.backBackgroundColor,
-              backgroundSize: cardConfig.backBackgroundPattern === 'grid' ? '20px 20px' : cardConfig.backBackgroundImage ? 'cover' : undefined,
-            }} className="shadow-2xl">
+            <div style={getBackgroundStyle(true)} className="shadow-2xl">
               {/* QR Code */}
               {cardConfig.showQRCode && (
                 <DraggableElement
@@ -321,7 +354,7 @@ export const CardEditorNew: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[500px] bg-muted rounded-lg p-8">
         <DndContext onDragEnd={handleDragEnd}>
-          <div style={getBackgroundStyle()} className="shadow-2xl">
+          <div style={getBackgroundStyle(false)} className="shadow-2xl">
             {/* Avatar */}
             {cardConfig.showEmail && content.avatarUrl && (
               <DraggableElement
@@ -350,8 +383,12 @@ export const CardEditorNew: React.FC = () => {
               onSelect={() => setSelectedElement('name')}
             >
               <h2 
-                className="font-bold text-white truncate max-w-[200px]"
-                style={{ fontSize: `${cardConfig.fontSize + 4}px`, fontFamily: cardConfig.fontFamily }}
+                className="font-bold truncate max-w-[200px]"
+                style={{ 
+                  fontSize: `${cardConfig.fontSize + 4}px`, 
+                  fontFamily: cardConfig.fontFamily,
+                  color: cardConfig.textColor
+                }}
               >
                 {content.fullName || 'Your Name'}
               </h2>
@@ -366,8 +403,13 @@ export const CardEditorNew: React.FC = () => {
                 onSelect={() => setSelectedElement('jobTitle')}
               >
                 <p 
-                  className="text-white/80 truncate max-w-[200px]"
-                  style={{ fontSize: `${cardConfig.fontSize - 2}px`, fontFamily: cardConfig.fontFamily }}
+                  className="truncate max-w-[200px]"
+                  style={{ 
+                    fontSize: `${cardConfig.fontSize - 2}px`, 
+                    fontFamily: cardConfig.fontFamily,
+                    color: cardConfig.textColor,
+                    opacity: 0.8
+                  }}
                 >
                   {content.jobTitle}
                 </p>
@@ -383,8 +425,13 @@ export const CardEditorNew: React.FC = () => {
                 onSelect={() => setSelectedElement('company')}
               >
                 <p 
-                  className="text-white/60 truncate max-w-[200px]"
-                  style={{ fontSize: `${cardConfig.fontSize - 4}px`, fontFamily: cardConfig.fontFamily }}
+                  className="truncate max-w-[200px]"
+                  style={{ 
+                    fontSize: `${cardConfig.fontSize - 4}px`, 
+                    fontFamily: cardConfig.fontFamily,
+                    color: cardConfig.textColor,
+                    opacity: 0.6
+                  }}
                 >
                   {content.company}
                 </p>
@@ -400,8 +447,13 @@ export const CardEditorNew: React.FC = () => {
                 onSelect={() => setSelectedElement('email')}
               >
                 <div 
-                  className="text-white/90 truncate max-w-[200px]"
-                  style={{ fontSize: `${cardConfig.fontSize - 4}px`, fontFamily: cardConfig.fontFamily }}
+                  className="truncate max-w-[200px]"
+                  style={{ 
+                    fontSize: `${cardConfig.fontSize - 4}px`, 
+                    fontFamily: cardConfig.fontFamily,
+                    color: cardConfig.textColor,
+                    opacity: 0.9
+                  }}
                 >
                   {content.email}
                 </div>
@@ -417,8 +469,13 @@ export const CardEditorNew: React.FC = () => {
                 onSelect={() => setSelectedElement('phone')}
               >
                 <div 
-                  className="text-white/90 truncate max-w-[200px]"
-                  style={{ fontSize: `${cardConfig.fontSize - 4}px`, fontFamily: cardConfig.fontFamily }}
+                  className="truncate max-w-[200px]"
+                  style={{ 
+                    fontSize: `${cardConfig.fontSize - 4}px`, 
+                    fontFamily: cardConfig.fontFamily,
+                    color: cardConfig.textColor,
+                    opacity: 0.9
+                  }}
                 >
                   {content.phone}
                 </div>
@@ -647,89 +704,298 @@ export const CardEditorNew: React.FC = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="style" className="space-y-6">
+              <TabsContent value="style" className="space-y-4">
                 <Card className="p-6 space-y-6">
+                  <h3 className="font-semibold text-base border-b pb-2">
+                    {cardSide === 'front' ? 'Front Design' : 'Back Design'}
+                  </h3>
+
                   {cardSide === 'front' ? (
                     <>
+                      {/* Background Type Selection */}
                       <div>
-                        <Label>Front Background Color</Label>
-                        <Input
-                          type="color"
-                          value={cardConfig.backgroundColor}
-                          onChange={(e) => setCardConfig({ ...cardConfig, backgroundColor: e.target.value })}
-                          className="mt-2 h-12 cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Front Background Pattern</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
-                            <Button
-                              key={pattern}
-                              variant={cardConfig.backgroundPattern === pattern ? 'default' : 'outline'}
-                              onClick={() => setCardConfig({ ...cardConfig, backgroundPattern: pattern })}
-                              className="capitalize"
-                            >
-                              {pattern}
-                            </Button>
-                          ))}
+                        <Label className="mb-3 block">Background Type</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button
+                            variant={!cardConfig.useGradient && !cardConfig.backgroundImage ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, useGradient: false, backgroundImage: '' })}
+                            size="sm"
+                          >
+                            Solid Color
+                          </Button>
+                          <Button
+                            variant={cardConfig.useGradient ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, useGradient: true, backgroundImage: '' })}
+                            size="sm"
+                          >
+                            Gradient
+                          </Button>
+                          <Button
+                            variant={cardConfig.backgroundImage ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, useGradient: false })}
+                            size="sm"
+                          >
+                            Image
+                          </Button>
                         </div>
                       </div>
 
-                      <div>
-                        <Label>Front Background Image</Label>
-                        <div className="mt-2">
+                      {/* Solid Color */}
+                      {!cardConfig.useGradient && !cardConfig.backgroundImage && (
+                        <div>
+                          <Label>Background Color</Label>
                           <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="cursor-pointer"
+                            type="color"
+                            value={cardConfig.backgroundColor}
+                            onChange={(e) => setCardConfig({ ...cardConfig, backgroundColor: e.target.value })}
+                            className="mt-2 h-12 cursor-pointer"
                           />
-                          {cardConfig.backgroundImage && (
+                        </div>
+                      )}
+
+                      {/* Gradient */}
+                      {cardConfig.useGradient && !cardConfig.backgroundImage && (
+                        <>
+                          <div>
+                            <Label>Number of Gradient Colors</Label>
+                            <div className="flex gap-2 mt-2">
+                              {[2, 3, 4].map((num) => (
+                                <Button
+                                  key={num}
+                                  variant={cardConfig.gradientColors.length === num ? 'default' : 'outline'}
+                                  onClick={() => {
+                                    const newColors = Array(num).fill(0).map((_, i) => 
+                                      cardConfig.gradientColors[i] || '#1e293b'
+                                    );
+                                    setCardConfig({ ...cardConfig, gradientColors: newColors });
+                                  }}
+                                  size="sm"
+                                >
+                                  {num} Colors
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            {cardConfig.gradientColors.map((color, index) => (
+                              <div key={index}>
+                                <Label>Color {index + 1}</Label>
+                                <Input
+                                  type="color"
+                                  value={color}
+                                  onChange={(e) => {
+                                    const newColors = [...cardConfig.gradientColors];
+                                    newColors[index] = e.target.value;
+                                    setCardConfig({ ...cardConfig, gradientColors: newColors });
+                                  }}
+                                  className="mt-1 h-12 cursor-pointer"
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div>
+                            <Label>Gradient Direction</Label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              {[
+                                { value: 'to-r', label: 'Left to Right' },
+                                { value: 'to-br', label: 'Diagonal ↘' },
+                                { value: 'to-b', label: 'Top to Bottom' },
+                                { value: 'to-bl', label: 'Diagonal ↙' }
+                              ].map((dir) => (
+                                <Button
+                                  key={dir.value}
+                                  variant={cardConfig.gradientDirection === dir.value ? 'default' : 'outline'}
+                                  onClick={() => setCardConfig({ ...cardConfig, gradientDirection: dir.value as any })}
+                                  size="sm"
+                                >
+                                  {dir.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Background Image */}
+                      {cardConfig.backgroundImage && (
+                        <div>
+                          <Label>Background Image</Label>
+                          <div className="mt-2 space-y-2">
+                            <div className="w-full h-32 rounded-lg border overflow-hidden">
+                              <img src={cardConfig.backgroundImage} alt="Background" className="w-full h-full object-cover" />
+                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => setCardConfig({ ...cardConfig, backgroundImage: '' })}
-                              className="mt-2"
                             >
                               Remove Image
                             </Button>
-                          )}
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      
+                      {!cardConfig.backgroundImage && (
+                        <div>
+                          <Label>Upload Background Image</Label>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="mt-2 cursor-pointer"
+                          />
+                        </div>
+                      )}
+
+                      {/* Background Pattern Overlay */}
+                      {!cardConfig.backgroundImage && (
+                        <div>
+                          <Label>Pattern Overlay (Optional)</Label>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
+                              <Button
+                                key={pattern}
+                                variant={cardConfig.backgroundPattern === pattern ? 'default' : 'outline'}
+                                onClick={() => setCardConfig({ ...cardConfig, backgroundPattern: pattern })}
+                                size="sm"
+                                className="capitalize"
+                              >
+                                {pattern}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
+                      {/* Back Side Design */}
                       <div>
-                        <Label>Back Background Color</Label>
-                        <Input
-                          type="color"
-                          value={cardConfig.backBackgroundColor}
-                          onChange={(e) => setCardConfig({ ...cardConfig, backBackgroundColor: e.target.value })}
-                          className="mt-2 h-12 cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Back Background Pattern</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
-                            <Button
-                              key={pattern}
-                              variant={cardConfig.backBackgroundPattern === pattern ? 'default' : 'outline'}
-                              onClick={() => setCardConfig({ ...cardConfig, backBackgroundPattern: pattern })}
-                              className="capitalize"
-                            >
-                              {pattern}
-                            </Button>
-                          ))}
+                        <Label className="mb-3 block">Background Type</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button
+                            variant={!cardConfig.backUseGradient && !cardConfig.backBackgroundImage ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, backUseGradient: false, backBackgroundImage: '' })}
+                            size="sm"
+                          >
+                            Solid Color
+                          </Button>
+                          <Button
+                            variant={cardConfig.backUseGradient ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, backUseGradient: true, backBackgroundImage: '' })}
+                            size="sm"
+                          >
+                            Gradient
+                          </Button>
+                          <Button
+                            variant={cardConfig.backBackgroundImage ? 'default' : 'outline'}
+                            onClick={() => setCardConfig({ ...cardConfig, backUseGradient: false })}
+                            size="sm"
+                          >
+                            Image
+                          </Button>
                         </div>
                       </div>
 
-                      <div>
-                        <Label>Back Background Image</Label>
-                        <div className="mt-2">
+                      {!cardConfig.backUseGradient && !cardConfig.backBackgroundImage && (
+                        <div>
+                          <Label>Background Color</Label>
+                          <Input
+                            type="color"
+                            value={cardConfig.backBackgroundColor}
+                            onChange={(e) => setCardConfig({ ...cardConfig, backBackgroundColor: e.target.value })}
+                            className="mt-2 h-12 cursor-pointer"
+                          />
+                        </div>
+                      )}
+
+                      {cardConfig.backUseGradient && !cardConfig.backBackgroundImage && (
+                        <>
+                          <div>
+                            <Label>Number of Gradient Colors</Label>
+                            <div className="flex gap-2 mt-2">
+                              {[2, 3, 4].map((num) => (
+                                <Button
+                                  key={num}
+                                  variant={cardConfig.backGradientColors.length === num ? 'default' : 'outline'}
+                                  onClick={() => {
+                                    const newColors = Array(num).fill(0).map((_, i) => 
+                                      cardConfig.backGradientColors[i] || '#1e293b'
+                                    );
+                                    setCardConfig({ ...cardConfig, backGradientColors: newColors });
+                                  }}
+                                  size="sm"
+                                >
+                                  {num} Colors
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            {cardConfig.backGradientColors.map((color, index) => (
+                              <div key={index}>
+                                <Label>Color {index + 1}</Label>
+                                <Input
+                                  type="color"
+                                  value={color}
+                                  onChange={(e) => {
+                                    const newColors = [...cardConfig.backGradientColors];
+                                    newColors[index] = e.target.value;
+                                    setCardConfig({ ...cardConfig, backGradientColors: newColors });
+                                  }}
+                                  className="mt-1 h-12 cursor-pointer"
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div>
+                            <Label>Gradient Direction</Label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              {[
+                                { value: 'to-r', label: 'Left to Right' },
+                                { value: 'to-br', label: 'Diagonal ↘' },
+                                { value: 'to-b', label: 'Top to Bottom' },
+                                { value: 'to-bl', label: 'Diagonal ↙' }
+                              ].map((dir) => (
+                                <Button
+                                  key={dir.value}
+                                  variant={cardConfig.backGradientDirection === dir.value ? 'default' : 'outline'}
+                                  onClick={() => setCardConfig({ ...cardConfig, backGradientDirection: dir.value as any })}
+                                  size="sm"
+                                >
+                                  {dir.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {cardConfig.backBackgroundImage && (
+                        <div>
+                          <Label>Background Image</Label>
+                          <div className="mt-2 space-y-2">
+                            <div className="w-full h-32 rounded-lg border overflow-hidden">
+                              <img src={cardConfig.backBackgroundImage} alt="Background" className="w-full h-full object-cover" />
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCardConfig({ ...cardConfig, backBackgroundImage: '' })}
+                            >
+                              Remove Image
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {!cardConfig.backBackgroundImage && (
+                        <div>
+                          <Label>Upload Background Image</Label>
                           <Input
                             type="file"
                             accept="image/*"
@@ -740,7 +1006,7 @@ export const CardEditorNew: React.FC = () => {
                               try {
                                 const fileExt = file.name.split('.').pop();
                                 const fileName = `${user?.id}-card-back-bg-${Date.now()}.${fileExt}`;
-                                const filePath = `${fileName}`;
+                                const filePath = `${user?.id}/${fileName}`;
 
                                 const { error: uploadError } = await supabase.storage
                                   .from('avatars')
@@ -766,20 +1032,29 @@ export const CardEditorNew: React.FC = () => {
                                 });
                               }
                             }}
-                            className="cursor-pointer"
+                            className="mt-2 cursor-pointer"
                           />
-                          {cardConfig.backBackgroundImage && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setCardConfig({ ...cardConfig, backBackgroundImage: '' })}
-                              className="mt-2"
-                            >
-                              Remove Image
-                            </Button>
-                          )}
                         </div>
-                      </div>
+                      )}
+
+                      {!cardConfig.backBackgroundImage && (
+                        <div>
+                          <Label>Pattern Overlay (Optional)</Label>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            {(['none', 'dots', 'grid', 'waves'] as const).map((pattern) => (
+                              <Button
+                                key={pattern}
+                                variant={cardConfig.backBackgroundPattern === pattern ? 'default' : 'outline'}
+                                onClick={() => setCardConfig({ ...cardConfig, backBackgroundPattern: pattern })}
+                                size="sm"
+                                className="capitalize"
+                              >
+                                {pattern}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       <div>
                         <Label>QR Code Size: {cardConfig.qrCodeSize}px</Label>
@@ -811,48 +1086,65 @@ export const CardEditorNew: React.FC = () => {
                     </>
                   )}
 
-                  <div>
-                    <Label>Font Family</Label>
-                    <select
-                      value={cardConfig.fontFamily}
-                      onChange={(e) => setCardConfig({ ...cardConfig, fontFamily: e.target.value })}
-                      className="w-full mt-2 h-10 rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="Inter">Inter</option>
-                      <option value="Arial">Arial</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Courier New">Courier New</option>
-                      <option value="Verdana">Verdana</option>
-                      <option value="Helvetica">Helvetica</option>
-                      <option value="Playfair Display">Playfair Display</option>
-                      <option value="Roboto">Roboto</option>
-                      <option value="Montserrat">Montserrat</option>
-                    </select>
-                  </div>
+                  {/* Common Typography Settings */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-sm mb-4">Typography</h4>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Text Color</Label>
+                        <Input
+                          type="color"
+                          value={cardConfig.textColor}
+                          onChange={(e) => setCardConfig({ ...cardConfig, textColor: e.target.value })}
+                          className="mt-2 h-12 cursor-pointer"
+                        />
+                      </div>
 
-                  <div>
-                    <Label>Font Size: {cardConfig.fontSize}px</Label>
-                    <Slider
-                      value={[cardConfig.fontSize]}
-                      onValueChange={([value]) => setCardConfig({ ...cardConfig, fontSize: value })}
-                      min={12}
-                      max={24}
-                      step={1}
-                      className="mt-2"
-                    />
-                  </div>
+                      <div>
+                        <Label>Font Family</Label>
+                        <select
+                          value={cardConfig.fontFamily}
+                          onChange={(e) => setCardConfig({ ...cardConfig, fontFamily: e.target.value })}
+                          className="w-full mt-2 h-10 rounded-md border border-input bg-background px-3 py-2"
+                        >
+                          <option value="Inter">Inter</option>
+                          <option value="Arial">Arial</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Helvetica">Helvetica</option>
+                          <option value="Playfair Display">Playfair Display</option>
+                          <option value="Roboto">Roboto</option>
+                          <option value="Montserrat">Montserrat</option>
+                        </select>
+                      </div>
 
-                  <div>
-                    <Label>Border Radius: {cardConfig.borderRadius}px</Label>
-                    <Slider
-                      value={[cardConfig.borderRadius]}
-                      onValueChange={([value]) => setCardConfig({ ...cardConfig, borderRadius: value })}
-                      min={0}
-                      max={24}
-                      step={2}
-                      className="mt-2"
-                    />
+                      <div>
+                        <Label>Font Size: {cardConfig.fontSize}px</Label>
+                        <Slider
+                          value={[cardConfig.fontSize]}
+                          onValueChange={([value]) => setCardConfig({ ...cardConfig, fontSize: value })}
+                          min={12}
+                          max={24}
+                          step={1}
+                          className="mt-2"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Border Radius: {cardConfig.borderRadius}px</Label>
+                        <Slider
+                          value={[cardConfig.borderRadius]}
+                          onValueChange={([value]) => setCardConfig({ ...cardConfig, borderRadius: value })}
+                          min={0}
+                          max={24}
+                          step={2}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </Card>
               </TabsContent>

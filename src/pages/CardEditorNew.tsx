@@ -167,13 +167,19 @@ export const CardEditorNew: React.FC = () => {
     try {
       const currentContent = cardData.content_json || {};
       
+      // Preserve all existing content and update cardConfig
+      const updatedContent = {
+        ...currentContent,
+        cardConfig: {
+          ...currentContent.cardConfig,
+          ...cardConfig,
+        },
+      };
+      
       const { error } = await supabase
         .from('digital_cards')
         .update({
-          content_json: {
-            ...currentContent,
-            cardConfig,
-          },
+          content_json: updatedContent,
           updated_at: new Date().toISOString(),
         })
         .eq('id', cardData.id);

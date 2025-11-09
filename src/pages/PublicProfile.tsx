@@ -42,6 +42,8 @@ interface CardData {
   aiEnabled?: boolean;
   theme?: string;
   customCSS?: string;
+  bannerType?: 'gradient' | 'color' | 'image' | 'blurred' | 'pattern';
+  bannerValue?: string;
   cardOrder?: string[];
   cardVisibility?: {
     contact: boolean;
@@ -179,6 +181,8 @@ export const PublicProfile: React.FC = () => {
           aiEnabled: profile?.ai_enabled ?? false,
           theme: content.theme || 'default',
           customCSS: content.customCSS || '',
+          bannerType: content.bannerType || 'gradient',
+          bannerValue: content.bannerValue || '',
           cardOrder: content.cardOrder || ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages'],
           cardVisibility: content.cardVisibility || {
             contact: true,

@@ -233,6 +233,10 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
                   background: 'linear-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary) / 0.1) 1px, transparent 1px)',
                   backgroundSize: '20px 20px'
                 }
+              : cardData.bannerType === 'gradient' && cardData.bannerValue
+              ? { 
+                  background: `linear-gradient(to bottom right, ${(cardData.bannerValue.split(',') || ['#3b82f6', '#8b5cf6']).join(', ')})` 
+                }
               : cardData.bannerType === 'gradient'
               ? { background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.1))' }
               : { backgroundColor: 'hsl(var(--muted))' })

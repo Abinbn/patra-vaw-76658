@@ -15,6 +15,8 @@ interface CardContent {
   phone: string;
   avatarUrl: string;
   cardConfig?: any;
+  bannerType?: 'gradient' | 'color' | 'image' | 'blurred' | 'pattern';
+  bannerValue?: string;
 }
 
 interface CardData {
@@ -26,6 +28,8 @@ interface CardData {
   avatarUrl: string;
   vanityUrl: string;
   cardConfig?: any;
+  bannerType?: 'gradient' | 'color' | 'image' | 'blurred' | 'pattern';
+  bannerValue?: string;
 }
 export const MyCard: React.FC = () => {
   const {
@@ -95,6 +99,8 @@ export const MyCard: React.FC = () => {
           avatarUrl: content.avatarUrl || '',
           vanityUrl: card.vanity_url || '',
           cardConfig: content.cardConfig || null,
+          bannerType: content.bannerType || 'gradient',
+          bannerValue: content.bannerValue || '',
         });
         setLoading(false);
       } catch (err) {

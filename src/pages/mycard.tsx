@@ -198,6 +198,59 @@ export const MyCard: React.FC = () => {
         </div>
       </div>;
   }
+
+  // Helper function to generate card background styles from cardConfig
+  const getCardBackgroundStyle = (config: any, isBack = false) => {
+    const base: React.CSSProperties = {
+      borderRadius: `${config?.borderRadius || 12}px`,
+    };
+
+    const bgImage = isBack ? config?.backBackgroundImage : config?.backgroundImage;
+    const bgColor = isBack ? config?.backBackgroundColor : config?.backgroundColor;
+    const bgPattern = isBack ? config?.backBackgroundPattern : config?.backgroundPattern;
+    const useGrad = isBack ? config?.backUseGradient : config?.useGradient;
+    const gradColors = isBack ? config?.backGradientColors : config?.gradientColors;
+    const gradDir = isBack ? config?.backGradientDirection : config?.gradientDirection;
+
+    // Priority: Image > Gradient > Solid Color + Pattern
+    if (bgImage) {
+      return {
+        ...base,
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
+    }
+
+    if (useGrad && gradColors?.length >= 2) {
+      const direction = {
+        'to-r': 'to right',
+        'to-br': 'to bottom right',
+        'to-b': 'to bottom',
+        'to-bl': 'to bottom left'
+      }[gradDir] || 'to bottom right';
+      
+      return {
+        ...base,
+        backgroundImage: `linear-gradient(${direction}, ${gradColors.join(', ')})`,
+      };
+    }
+
+    const patterns: Record<string, string> = {
+      none: '',
+      dots: `radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+      grid: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+      waves: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)`,
+    };
+
+    return {
+      ...base,
+      backgroundColor: bgColor || '#1e293b',
+      backgroundImage: bgPattern && bgPattern !== 'none' ? patterns[bgPattern] : undefined,
+      backgroundSize: bgPattern === 'dots' || bgPattern === 'grid' ? '20px 20px' : undefined,
+    };
+  };
+
   const cardUrl = `${window.location.origin}/${username}`;
   return <div className="min-h-screen bg-[#fafafa] relative overflow-hidden scrollbar-thin">
       {/* Micro-dotted canvas background */}
@@ -306,7 +359,10 @@ export const MyCard: React.FC = () => {
             }}>
             {/* Front Side */}
             <div className="card-face card-front">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black rounded-xl overflow-hidden">
+              <div 
+                className="absolute inset-0 rounded-xl overflow-hidden"
+                style={getCardBackgroundStyle(cardData.cardConfig, false)}
+              >
                 {/* Subtle texture overlay */}
                 <div className="absolute inset-0 opacity-5" style={{
                 backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E")'
@@ -354,7 +410,11 @@ export const MyCard: React.FC = () => {
 
                         {/* Name */}
                         <div style={{ position: 'absolute', left: `${positions.name?.x || 140}px`, top: `${positions.name?.y || 60}px` }}>
-                          <h2 className="font-bold text-white" style={{ fontSize: `${(config.fontSize || 16) + 4}px` }}>
+                          <h2 className="font-bold" style={{ 
+                            fontSize: `${(config.fontSize || 16) + 4}px`,
+                            color: config.textColor || '#ffffff',
+                            fontFamily: config.fontFamily || 'Inter'
+                          }}>
                             {cardData.fullName}
                           </h2>
                         </div>
@@ -362,7 +422,12 @@ export const MyCard: React.FC = () => {
                         {/* Job Title */}
                         {cardData.jobTitle && (config.showJobTitle !== false) && (
                           <div style={{ position: 'absolute', left: `${positions.jobTitle?.x || 140}px`, top: `${positions.jobTitle?.y || 90}px` }}>
-                            <p className="text-white/80" style={{ fontSize: `${(config.fontSize || 16) - 2}px` }}>
+                            <p style={{ 
+                              fontSize: `${(config.fontSize || 16) - 2}px`,
+                              color: config.textColor || '#ffffff',
+                              fontFamily: config.fontFamily || 'Inter',
+                              opacity: 0.8
+                            }}>
                               {cardData.jobTitle}
                             </p>
                           </div>
@@ -371,7 +436,12 @@ export const MyCard: React.FC = () => {
                         {/* Company */}
                         {cardData.company && (config.showCompany !== false) && (
                           <div style={{ position: 'absolute', left: `${positions.company?.x || 140}px`, top: `${positions.company?.y || 115}px` }}>
-                            <p className="text-white/60" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>
+                            <p style={{ 
+                              fontSize: `${(config.fontSize || 16) - 4}px`,
+                              color: config.textColor || '#ffffff',
+                              fontFamily: config.fontFamily || 'Inter',
+                              opacity: 0.6
+                            }}>
                               {cardData.company}
                             </p>
                           </div>
@@ -380,16 +450,26 @@ export const MyCard: React.FC = () => {
                         {/* Email */}
                         {cardData.email && (config.showEmail !== false) && (
                           <div style={{ position: 'absolute', left: `${positions.email?.x || 140}px`, top: `${positions.email?.y || 150}px` }} className="flex items-center gap-2">
-                            <Mail className="w-3 h-3 flex-shrink-0 text-white/90" />
-                            <span className="text-white/90" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>{cardData.email}</span>
+                            <Mail className="w-3 h-3 flex-shrink-0" style={{ color: config.textColor || '#ffffff', opacity: 0.9 }} />
+                            <span style={{ 
+                              fontSize: `${(config.fontSize || 16) - 4}px`,
+                              color: config.textColor || '#ffffff',
+                              fontFamily: config.fontFamily || 'Inter',
+                              opacity: 0.9
+                            }}>{cardData.email}</span>
                           </div>
                         )}
 
                         {/* Phone */}
                         {cardData.phone && (config.showPhone !== false) && (
                           <div style={{ position: 'absolute', left: `${positions.phone?.x || 140}px`, top: `${positions.phone?.y || 175}px` }} className="flex items-center gap-2">
-                            <Phone className="w-3 h-3 flex-shrink-0 text-white/90" />
-                            <span className="text-white/90" style={{ fontSize: `${(config.fontSize || 16) - 4}px` }}>{cardData.phone}</span>
+                            <Phone className="w-3 h-3 flex-shrink-0" style={{ color: config.textColor || '#ffffff', opacity: 0.9 }} />
+                            <span style={{ 
+                              fontSize: `${(config.fontSize || 16) - 4}px`,
+                              color: config.textColor || '#ffffff',
+                              fontFamily: config.fontFamily || 'Inter',
+                              opacity: 0.9
+                            }}>{cardData.phone}</span>
                           </div>
                         )}
                       </>
@@ -400,19 +480,11 @@ export const MyCard: React.FC = () => {
             </div>
 
             {/* Back Side */}
-            <div className="card-face card-back" style={{
-              borderRadius: `${cardData.cardConfig?.borderRadius || 12}px`,
-            }}>
-              <div className="absolute inset-0 rounded-xl overflow-hidden" style={{
-                backgroundColor: cardData.cardConfig?.backBackgroundColor || cardData.cardConfig?.backgroundColor || '#1e293b',
-                backgroundImage: cardData.cardConfig?.backBackgroundImage ? `url(${cardData.cardConfig.backBackgroundImage})` : 
-                  cardData.cardConfig?.backBackgroundPattern === 'dots' ? 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)' :
-                  cardData.cardConfig?.backBackgroundPattern === 'grid' ? 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' :
-                  cardData.cardConfig?.backBackgroundPattern === 'waves' ? 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)' :
-                  'linear-gradient(135deg, #1e293b, #0f172a)',
-                backgroundSize: cardData.cardConfig?.backBackgroundPattern === 'grid' ? '20px 20px' : 'cover',
-                borderRadius: `${cardData.cardConfig?.borderRadius || 12}px`,
-              }}>
+            <div className="card-face card-back">
+              <div 
+                className="absolute inset-0 rounded-xl overflow-hidden" 
+                style={getCardBackgroundStyle(cardData.cardConfig, true)}
+              >
                 {/* Subtle texture overlay */}
                 <div className="absolute inset-0 opacity-5" style={{
                 backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulance type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E")'

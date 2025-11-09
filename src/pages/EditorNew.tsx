@@ -2575,15 +2575,100 @@ export const EditorNew: React.FC = () => {
 
                 {cardData.bannerType === 'image' && (
                   <div className="space-y-2">
-                    <Label>Banner Image URL</Label>
+                    {cardData.bannerValue && (
+                      <div className="relative w-full h-32 rounded-lg border overflow-hidden mb-2">
+                        <img src={cardData.bannerValue} alt="Banner" className="w-full h-full object-cover" />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => setCardData({ ...cardData, bannerValue: '' })}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                    <Label>Upload Banner Image</Label>
                     <Input
-                      value={cardData.bannerValue || ''}
-                      onChange={(e) => setCardData({ ...cardData, bannerValue: e.target.value })}
-                      placeholder="https://example.com/banner.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        try {
+                          const fileExt = file.name.split('.').pop();
+                          const fileName = `${user?.id}-banner-${Date.now()}.${fileExt}`;
+                          const filePath = `${user?.id}/${fileName}`;
+
+                          const { error: uploadError } = await supabase.storage
+                            .from('avatars')
+                            .upload(filePath, file);
+
+                          if (uploadError) throw uploadError;
+
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('avatars')
+                            .getPublicUrl(filePath);
+
+                          setCardData({ ...cardData, bannerValue: publicUrl });
+                          
+                          toast({
+                            title: 'Success',
+                            description: 'Banner image uploaded!',
+                          });
+                        } catch (error: any) {
+                          toast({
+                            title: 'Error',
+                            description: error.message,
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      className="cursor-pointer"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter a URL for your banner image
+                      Upload an image for your profile banner
                     </p>
+                  </div>
+                )}
+
+                {cardData.bannerType === 'gradient' && (
+                  <div className="space-y-3">
+                    <Label>Gradient Colors (2-4 colors)</Label>
+                    <div className="flex gap-2 mb-2">
+                      {[2, 3, 4].map((num) => (
+                        <Button
+                          key={num}
+                          variant={(cardData.bannerValue?.split(',').length || 2) === num ? 'default' : 'outline'}
+                          onClick={() => {
+                            const colors = Array(num).fill('#3b82f6').map((c, i) => {
+                              const existing = cardData.bannerValue?.split(',')[i];
+                              return existing || c;
+                            });
+                            setCardData({ ...cardData, bannerValue: colors.join(',') });
+                          }}
+                          size="sm"
+                        >
+                          {num} Colors
+                        </Button>
+                      ))}
+                    </div>
+                    {(cardData.bannerValue?.split(',') || ['#3b82f6', '#8b5cf6']).map((color, index) => (
+                      <div key={index}>
+                        <Label>Color {index + 1}</Label>
+                        <Input
+                          type="color"
+                          value={color}
+                          onChange={(e) => {
+                            const colors = cardData.bannerValue?.split(',') || ['#3b82f6', '#8b5cf6'];
+                            colors[index] = e.target.value;
+                            setCardData({ ...cardData, bannerValue: colors.join(',') });
+                          }}
+                          className="h-12 cursor-pointer"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -2616,26 +2701,28 @@ export const EditorNew: React.FC = () => {
               </div>
             </div>
 
-            {/* Custom CSS */}
-            <div className="space-y-4 p-4 border border-border rounded-lg">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Custom CSS (Advanced)</h3>
-                <Badge variant="secondary">Pro</Badge>
+            {/* Custom CSS - Hidden for now, can be enabled from developer settings */}
+            {false && (
+              <div className="space-y-4 p-4 border border-border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Custom CSS (Advanced)</h3>
+                  <Badge variant="secondary">Pro</Badge>
+                </div>
+                <div>
+                  <Label htmlFor="custom-css">Custom CSS Code</Label>
+                  <Textarea
+                    id="custom-css"
+                    value={cardData.customCSS}
+                    onChange={(e) => setCardData({ ...cardData, customCSS: e.target.value })}
+                    placeholder=".card { background: linear-gradient(...); }"
+                    className="min-h-[120px] font-mono text-xs"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add custom CSS to style your card (for advanced users)
+                  </p>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="custom-css">Custom CSS Code</Label>
-                <Textarea
-                  id="custom-css"
-                  value={cardData.customCSS}
-                  onChange={(e) => setCardData({ ...cardData, customCSS: e.target.value })}
-                  placeholder=".card { background: linear-gradient(...); }"
-                  className="min-h-[120px] font-mono text-xs"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add custom CSS to style your card (for advanced users)
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         );
 

@@ -167,12 +167,18 @@ export const CardEditorNew: React.FC = () => {
     try {
       const currentContent = cardData.content_json || {};
       
+      // Auto-apply front image to back if back image is not set
+      const finalConfig = { ...cardConfig };
+      if (finalConfig.backgroundImage && !finalConfig.backBackgroundImage) {
+        finalConfig.backBackgroundImage = finalConfig.backgroundImage;
+      }
+      
       // Preserve all existing content and update cardConfig
       const updatedContent = {
         ...currentContent,
         cardConfig: {
           ...currentContent.cardConfig,
-          ...cardConfig,
+          ...finalConfig,
         },
       };
       

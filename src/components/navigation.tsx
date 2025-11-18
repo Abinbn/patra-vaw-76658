@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { HeroButton } from '@/components/ui/hero-button';
 import { Menu, X, CreditCard, ArrowLeft, Home } from 'lucide-react';
@@ -68,9 +68,9 @@ export const Navigation: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="/" className="text-foreground-muted hover:text-foreground transition-colors">
+            <Link to="/yourself-ai" className="text-foreground-muted hover:text-foreground transition-colors">
               Yourself AI
-            </a>
+            </Link>
             <a href="#features" className="text-foreground-muted hover:text-foreground transition-colors">
               Features
             </a>
@@ -104,9 +104,9 @@ export const Navigation: React.FC = () => {
         {/* Mobile Navigation */}
         {isOpen && <div className="md:hidden py-4 border-t border-glass-border">
             <div className="flex flex-col space-y-4">
-              <a href="/" className="text-foreground-muted hover:text-foreground transition-colors px-4 py-2">
+              <Link to="/yourself-ai" className="text-foreground-muted hover:text-foreground transition-colors px-4 py-2">
                 Yourself AI
-              </a>
+              </Link>
               <a href="#features" className="text-foreground-muted hover:text-foreground transition-colors px-4 py-2">
                 Features
               </a>

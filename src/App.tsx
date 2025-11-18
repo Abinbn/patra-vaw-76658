@@ -17,6 +17,7 @@ import { CardEditorNew } from "./pages/CardEditorNew";
 import { CardTemplates } from "./pages/CardTemplates";
 import { PublicProfile } from "./pages/PublicProfile";
 import { MyCard } from "./pages/mycard";
+import { YourselfAI } from "./pages/YourselfAI";
 import { EmailSignature } from "./pages/EmailSignature";
 import { ApiDocs } from "./pages/ApiDocs";
 import { Settings } from "./pages/Settings";
@@ -48,6 +49,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPageWrapper />} />
+            <Route path="/yourself-ai" element={<YourselfAI />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />

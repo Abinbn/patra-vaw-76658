@@ -69,6 +69,20 @@ const Admin: React.FC = () => {
   
   const [docPages, setDocPages] = useState<any[]>([]);
   const [isNewDoc, setIsNewDoc] = useState(false);
+  
+  // Background image form state
+  const [backgroundImages, setBackgroundImages] = useState<any[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [bgImageForm, setBgImageForm] = useState({
+    name: '',
+    description: '',
+    imageUrl: '',
+    tags: [] as string[],
+    uploadMode: 'url' as 'url' | 'upload',
+    imageFile: null as File | null,
+  });
+  const [tagInput, setTagInput] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -85,6 +99,8 @@ const Admin: React.FC = () => {
       loadUsers();
     } else if (isAdmin && activeSection === 'templates') {
       loadTemplates();
+      loadBackgroundImages();
+      loadExistingTags();
     } else if (isAdmin && activeSection === 'docs') {
       loadDocPages();
     }
@@ -179,6 +195,29 @@ const Admin: React.FC = () => {
     if (data) setTemplates(data);
   };
 
+  const loadBackgroundImages = async () => {
+    const { data } = await supabase
+      .from('background_images')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data) setBackgroundImages(data);
+  };
+
+  const loadExistingTags = async () => {
+    const { data } = await supabase
+      .from('background_images')
+      .select('tags');
+    if (data) {
+      const allTags = new Set<string>();
+      data.forEach((item: any) => {
+        if (item.tags) {
+          item.tags.forEach((tag: string) => allTags.add(tag));
+        }
+      });
+      setExistingTags(Array.from(allTags).sort());
+    }
+  };
+
   const loadDocPages = async () => {
     try {
       const { data, error } = await supabase
@@ -195,6 +234,110 @@ const Admin: React.FC = () => {
         description: 'Failed to load documentation pages',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setBgImageForm({ ...bgImageForm, imageFile: e.target.files[0] });
+    }
+  };
+
+  const handleAddTag = (tag: string) => {
+    if (tag && !bgImageForm.tags.includes(tag)) {
+      setBgImageForm({ ...bgImageForm, tags: [...bgImageForm.tags, tag] });
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setBgImageForm({
+      ...bgImageForm,
+      tags: bgImageForm.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const handleCreateBackgroundImage = async () => {
+    if (!bgImageForm.name) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a title for the image',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      let finalImageUrl = bgImageForm.imageUrl;
+
+      // Handle file upload if in upload mode
+      if (bgImageForm.uploadMode === 'upload' && bgImageForm.imageFile) {
+        const fileExt = bgImageForm.imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `background-images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, bgImageForm.imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        finalImageUrl = urlData.publicUrl;
+      }
+
+      if (!finalImageUrl) {
+        toast({
+          title: 'Error',
+          description: 'Please provide an image URL or upload a file',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('background_images')
+        .insert({
+          name: bgImageForm.name,
+          description: bgImageForm.description || null,
+          image_url: finalImageUrl,
+          tags: bgImageForm.tags,
+          created_by: user?.id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Background image added successfully',
+      });
+
+      // Reset form
+      setBgImageForm({
+        name: '',
+        description: '',
+        imageUrl: '',
+        tags: [],
+        uploadMode: 'url',
+        imageFile: null,
+      });
+
+      // Reload images
+      loadBackgroundImages();
+      loadExistingTags();
+    } catch (error) {
+      console.error('Error creating background image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add background image',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -661,31 +804,168 @@ const Admin: React.FC = () => {
           {activeSection === 'templates' && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold">Templates</h1>
-                <p className="text-muted-foreground">Manage card templates</p>
+                <h1 className="text-3xl font-bold">Background Templates</h1>
+                <p className="text-muted-foreground">Manage background images and templates</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templates.map((template) => (
-                  <Card key={template.id}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{template.name}</CardTitle>
-                      <CardDescription>{template.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4 mr-2" />
-                          Preview
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
+              {/* Add New Background Image Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add New Background Image</CardTitle>
+                  <CardDescription>Upload or link a new background template</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bg-title">Title *</Label>
+                    <Input
+                      id="bg-title"
+                      value={bgImageForm.name}
+                      onChange={(e) => setBgImageForm({ ...bgImageForm, name: e.target.value })}
+                      placeholder="e.g., Abstract Gradient"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bg-description">Description (Optional)</Label>
+                    <Textarea
+                      id="bg-description"
+                      value={bgImageForm.description}
+                      onChange={(e) => setBgImageForm({ ...bgImageForm, description: e.target.value })}
+                      placeholder="Brief description of the template"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Image Source</Label>
+                    <div className="flex gap-2 mb-3">
+                      <Button
+                        type="button"
+                        variant={bgImageForm.uploadMode === 'url' ? 'default' : 'outline'}
+                        onClick={() => setBgImageForm({ ...bgImageForm, uploadMode: 'url' })}
+                        size="sm"
+                      >
+                        URL
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={bgImageForm.uploadMode === 'upload' ? 'default' : 'outline'}
+                        onClick={() => setBgImageForm({ ...bgImageForm, uploadMode: 'upload' })}
+                        size="sm"
+                      >
+                        Upload
+                      </Button>
+                    </div>
+
+                    {bgImageForm.uploadMode === 'url' ? (
+                      <Input
+                        value={bgImageForm.imageUrl}
+                        onChange={(e) => setBgImageForm({ ...bgImageForm, imageUrl: e.target.value })}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    ) : (
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bg-tags">Tags</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="bg-tags"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag(tagInput);
+                          }
+                        }}
+                        placeholder="Type tag and press Enter"
+                        list="existing-tags"
+                      />
+                      <datalist id="existing-tags">
+                        {existingTags.map((tag) => (
+                          <option key={tag} value={tag} />
+                        ))}
+                      </datalist>
+                      <Button
+                        type="button"
+                        onClick={() => handleAddTag(tagInput)}
+                        size="sm"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    {bgImageForm.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {bgImageForm.tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => handleRemoveTag(tag)}
+                          >
+                            {tag} <XCircle className="w-3 h-3 ml-1" />
+                          </Badge>
+                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleCreateBackgroundImage}
+                    disabled={uploadingImage}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {uploadingImage ? 'Adding...' : 'Add Background Image'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Existing Background Images */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Existing Background Images</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {backgroundImages.map((image) => (
+                    <Card key={image.id} className="overflow-hidden">
+                      <div className="aspect-video relative">
+                        <img
+                          src={image.image_url}
+                          alt={image.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <CardHeader>
+                        <CardTitle className="text-sm">{image.name}</CardTitle>
+                        {image.description && (
+                          <CardDescription className="text-xs">{image.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        {image.tags && image.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {image.tags.map((tag: string) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {backgroundImages.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">
+                    No background images yet. Add one above to get started.
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -123,6 +123,42 @@ export type Database = {
           },
         ]
       }
+      background_images: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string
+          is_public: boolean | null
+          name: string
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          is_public?: boolean | null
+          name: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_public?: boolean | null
+          name?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       card_analytics: {
         Row: {
           card_id: string

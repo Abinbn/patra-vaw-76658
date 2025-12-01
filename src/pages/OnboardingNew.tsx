@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
-import { 
+import {
   ChevronRight, ChevronLeft, Users, Building2, User, AlertCircle,
   Brain, Wand2, Palette, Sparkles, Check, CreditCard, MapPin, Info,
   Camera, Mail, Briefcase, FileText, Upload
@@ -73,6 +73,8 @@ export const OnboardingNew: React.FC = () => {
   const [showCompanyWarning, setShowCompanyWarning] = useState(false);
   const [showAILoading, setShowAILoading] = useState(false);
   const [aiLoadingStep, setAiLoadingStep] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdVanityUrl, setCreatedVanityUrl] = useState('');
   const [data, setData] = useState<OnboardingData>({
     accountType: null,
     display_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
@@ -101,8 +103,8 @@ export const OnboardingNew: React.FC = () => {
 
   useEffect(() => {
     if (user?.email) {
-      setData(prev => ({ 
-        ...prev, 
+      setData(prev => ({
+        ...prev,
         email: user.email!,
         display_name: prev.display_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
         phone: prev.phone || user.user_metadata?.phone || '',
@@ -118,7 +120,7 @@ export const OnboardingNew: React.FC = () => {
       const timer = setTimeout(() => {
         setAiLoadingStep(aiLoadingStep + 1);
       }, aiLoadingSteps[aiLoadingStep].duration);
-      
+
       return () => clearTimeout(timer);
     } else if (showAILoading && aiLoadingStep >= aiLoadingSteps.length) {
       completeOnboarding();
@@ -128,7 +130,7 @@ export const OnboardingNew: React.FC = () => {
   const collectDeviceInfo = async () => {
     const browser = navigator.userAgent;
     const device = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
-    
+
     // Get IP via a public API
     let ip = 'Unknown';
     try {
@@ -217,33 +219,33 @@ export const OnboardingNew: React.FC = () => {
           }
           return username;
         };
-        
+
         let username = generateRandomUsername();
         let attempts = 0;
-        
+
         while (attempts < 10) {
           const { data: existingCard } = await supabase
             .from('digital_cards')
             .select('vanity_url')
             .eq('vanity_url', username)
             .maybeSingle();
-          
+
           if (!existingCard) {
             break;
           }
-          
+
           username = generateRandomUsername();
           attempts++;
         }
-        
+
         return username;
       };
 
       // Determine final avatar URL
-      const finalAvatarUrl = data.selectedAvatarSource === 'google' 
-        ? data.google_avatar_url 
-        : data.selectedAvatarSource === 'upload' 
-          ? data.avatar_url 
+      const finalAvatarUrl = data.selectedAvatarSource === 'google'
+        ? data.google_avatar_url
+        : data.selectedAvatarSource === 'upload'
+          ? data.avatar_url
           : '';
 
       // Check for existing card
@@ -259,7 +261,7 @@ export const OnboardingNew: React.FC = () => {
       if (!existingCard || !existingCard.vanity_url) {
         // Generate username
         vanityUrl = await generateUsername();
-        
+
         if (!existingCard) {
           // Create new card
           const { data: newCard, error: insertError } = await supabase
@@ -297,7 +299,7 @@ export const OnboardingNew: React.FC = () => {
             .from('digital_cards')
             .update({ vanity_url: vanityUrl })
             .eq('id', existingCard.id);
-          
+
           if (updateError) throw updateError;
           cardId = existingCard.id;
         }
@@ -371,8 +373,11 @@ export const OnboardingNew: React.FC = () => {
       // Mark tour as should show
       localStorage.removeItem('patra-tour-completed');
 
-      // Navigate to card page with card parameter
-      navigate(`/${vanityUrl}?card`, { replace: true });
+      // Show success screen
+      setCreatedVanityUrl(vanityUrl);
+      setShowAILoading(false);
+      setLoading(false);
+      setShowSuccess(true);
     } catch (error: any) {
       console.error('Error completing onboarding:', error);
       toast({
@@ -421,7 +426,7 @@ export const OnboardingNew: React.FC = () => {
         .getPublicUrl(filePath);
 
       setData({ ...data, avatar_url: publicUrl, selectedAvatarSource: 'upload' });
-      
+
       toast({
         title: "Avatar uploaded!",
         description: "Your profile picture has been updated."
@@ -436,11 +441,65 @@ export const OnboardingNew: React.FC = () => {
     }
   };
 
+  // Success Screen
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+          backgroundSize: '30px 30px'
+        }}></div>
+
+        <div className="w-full max-w-lg relative z-10">
+          <Card className="bg-white/90 backdrop-blur-xl shadow-2xl border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-500">
+            <div className="h-2 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
+            <CardContent className="p-8 text-center space-y-6">
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+                <Check className="w-12 h-12 text-green-600" />
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-slate-900">You're All Set!</h2>
+                <p className="text-slate-600">
+                  Your digital profile has been created successfully.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <p className="text-sm text-slate-500 mb-1">Your unique URL:</p>
+                <p className="font-mono font-medium text-violet-600">patra.me/{createdVanityUrl}</p>
+              </div>
+
+              <div className="grid gap-4 pt-4">
+                <Button
+                  onClick={() => navigate('/editor')}
+                  className="w-full h-12 text-lg bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Palette className="w-5 h-5 mr-2" />
+                  Customize in Editor
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(`/${createdVanityUrl}?card`, '_blank')}
+                  className="w-full h-12 text-lg border-2 hover:bg-slate-50"
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  View Public Card
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // AI Loading Screen
   if (showAILoading) {
     const CurrentIcon = aiLoadingStep < aiLoadingSteps.length ? aiLoadingSteps[aiLoadingStep].icon : Check;
     const currentText = aiLoadingStep < aiLoadingSteps.length ? aiLoadingSteps[aiLoadingStep].text : "Complete!";
-    
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-30" style={{
@@ -457,7 +516,7 @@ export const OnboardingNew: React.FC = () => {
               <div className="absolute inset-0 border-4 border-violet-200 rounded-full animate-spin-slow"></div>
               <div className="absolute inset-2 border-4 border-purple-200 rounded-full animate-spin-reverse"></div>
               <div className="absolute inset-4 border-4 border-pink-200 rounded-full animate-spin-slow"></div>
-              
+
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-2xl animate-pulse">
                   <CurrentIcon className="w-10 h-10 text-white animate-bounce-slow" />
@@ -469,16 +528,15 @@ export const OnboardingNew: React.FC = () => {
           <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 animate-fade-in">
             {currentText}
           </h2>
-          
+
           <div className="flex items-center justify-center gap-2 mb-8">
             {aiLoadingSteps.map((_, index) => (
               <div
                 key={index}
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  index <= aiLoadingStep
+                className={`h-2 rounded-full transition-all duration-500 ${index <= aiLoadingStep
                     ? 'w-8 bg-gradient-to-r from-violet-600 to-purple-600'
                     : 'w-2 bg-slate-300'
-                }`}
+                  }`}
               />
             ))}
           </div>
@@ -688,7 +746,7 @@ export const OnboardingNew: React.FC = () => {
                   <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose your photo</h2>
                   <p className="text-slate-600">Select between Google photo or upload new (optional)</p>
                 </div>
-                
+
                 <div className="flex flex-col items-center space-y-6">
                   {/* Avatar options */}
                   <div className="flex gap-6">
@@ -697,11 +755,10 @@ export const OnboardingNew: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setData({ ...data, selectedAvatarSource: 'google' })}
-                        className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${
-                          data.selectedAvatarSource === 'google'
+                        className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${data.selectedAvatarSource === 'google'
                             ? 'border-4 border-green-500 bg-green-50'
                             : 'border-2 border-slate-200 hover:border-slate-300'
-                        }`}
+                          }`}
                       >
                         <Avatar className="w-24 h-24">
                           <AvatarImage src={data.google_avatar_url} alt="Google Profile" />
@@ -720,11 +777,10 @@ export const OnboardingNew: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => document.getElementById('avatar-upload')?.click()}
-                      className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${
-                        data.selectedAvatarSource === 'upload'
+                      className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${data.selectedAvatarSource === 'upload'
                           ? 'border-4 border-green-500 bg-green-50'
                           : 'border-2 border-slate-200 hover:border-slate-300'
-                      }`}
+                        }`}
                     >
                       <Avatar className="w-24 h-24">
                         <AvatarImage src={data.avatar_url} alt="Uploaded Profile" />
@@ -745,15 +801,15 @@ export const OnboardingNew: React.FC = () => {
                       className="hidden"
                     />
                   </div>
-                  
+
                   {/* Preview of selected avatar */}
                   {(data.selectedAvatarSource === 'google' || data.selectedAvatarSource === 'upload') && (
                     <div className="text-center">
                       <p className="text-sm text-green-600 font-medium mb-2">✓ Profile photo selected</p>
                       <Avatar className="w-32 h-32 mx-auto border-4 border-green-500">
-                        <AvatarImage 
-                          src={data.selectedAvatarSource === 'google' ? data.google_avatar_url : data.avatar_url} 
-                          alt="Selected" 
+                        <AvatarImage
+                          src={data.selectedAvatarSource === 'google' ? data.google_avatar_url : data.avatar_url}
+                          alt="Selected"
                         />
                         <AvatarFallback>
                           <User className="w-16 h-16" />
@@ -1069,7 +1125,7 @@ export const OnboardingNew: React.FC = () => {
               <p className="text-base">
                 You're about to create a <strong>Company Account</strong>. This account type is designed for businesses and organizations. Please read carefully:
               </p>
-              
+
               <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
                 <h4 className="font-semibold text-slate-900 text-base">What is a Company Account?</h4>
                 <p className="text-sm text-slate-700">

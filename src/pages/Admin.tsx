@@ -1545,5 +1545,8 @@ const Admin: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
 
-      export default Admin;
+export default Admin;

@@ -1,254 +1,421 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Check, Code, Key } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Copy,
+  Check,
+  Terminal,
+  Globe,
+  Code,
+  Key,
+  Search,
+  BookOpen,
+  Zap,
+  Layout,
+  Server
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 export const ApiDocs: React.FC = () => {
-  const { user } = useAuth();
-  const [copiedEndpoint, setCopiedEndpoint] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState('your-api-key-here');
+  const [activeSection, setActiveSection] = useState('introduction');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const baseUrl = 'https://api.patra.app/v1';
-  
-  const endpoints = [
-    {
-      method: 'GET',
-      path: '/cards/:vanityUrl',
-      description: 'Fetch a user card by vanity URL',
-      example: `${baseUrl}/cards/johndoe`,
-      response: {
-        fullName: 'John Doe',
-        jobTitle: 'Software Engineer',
-        company: 'Acme Inc.',
-        avatarUrl: 'https://...',
-        socialLinks: [],
-        // ... other fields
-      }
-    },
-    {
-      method: 'GET',
-      path: '/cards/:vanityUrl/vcard',
-      description: 'Download vCard format',
-      example: `${baseUrl}/cards/johndoe/vcard`,
-      response: 'BEGIN:VCARD\\\\\\\\nVERSION:3.0\\\\\\\\n...'
-    },
-    {
-      method: 'POST',
-      path: '/cards/search',
-      description: 'Search cards by name or keywords',
-      example: `${baseUrl}/cards/search`,
-      body: { query: 'engineer', limit: 10 },
-      response: {
-        results: [],
-        total: 0
-      }
-    }
-  ];
+  // Interactive API State
+  const [testUsername, setTestUsername] = useState('');
+  const [apiResponse, setApiResponse] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Embed Generator State
+  const [embedUsername, setEmbedUsername] = useState('');
+  const [embedTheme, setEmbedTheme] = useState<'light' | 'dark'>('light');
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedEndpoint(id);
-    toast({
-      title: 'Copied!',
-      description: 'Code copied to clipboard',
-    });
-    setTimeout(() => setCopiedEndpoint(null), 2000);
+    setCopiedId(id);
+    toast.success('Copied to clipboard');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleTestApi = async () => {
+    if (!testUsername) {
+      toast.error('Please enter a username');
+      return;
+    }
+
+    setIsLoading(true);
+    setApiResponse(null);
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const { data: card, error } = await supabase
+        .from('digital_cards')
+        .select(`
+          *,
+          profiles:owner_user_id (
+            display_name,
+            job_title,
+            company_name,
+            avatar_url,
+            bio
+          )
+        `)
+        .eq('vanity_url', testUsername)
+        .single();
+
+      if (error) {
+        setApiResponse(JSON.stringify({ error: 'User not found', message: error.message }, null, 2));
+      } else {
+        // Transform to a cleaner API-like response
+        const publicResponse = {
+          id: card.id,
+          username: card.vanity_url,
+          displayName: card.profiles?.display_name,
+          jobTitle: card.profiles?.job_title,
+          company: card.profiles?.company_name,
+          bio: card.profiles?.bio,
+          avatarUrl: card.profiles?.avatar_url,
+          cardTitle: card.title,
+          qrCode: card.qr_code_url,
+          updatedAt: card.updated_at
+        };
+        setApiResponse(JSON.stringify(publicResponse, null, 2));
+      }
+    } catch (err) {
+      setApiResponse(JSON.stringify({ error: 'Internal Server Error' }, null, 2));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sections = [
+    { id: 'introduction', label: 'Introduction', icon: BookOpen },
+    { id: 'authentication', label: 'Authentication', icon: Key },
+    { id: 'endpoints', label: 'Endpoints', icon: Server },
+    { id: 'embedding', label: 'Embedding', icon: Globe },
+    { id: 'sdks', label: 'SDKs & Libraries', icon: Code },
+  ];
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
-          <p className="text-muted-foreground">
-            Integrate Patra cards into your application
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Sidebar */}
+      <div className="w-64 border-r bg-muted/30 hidden md:flex flex-col">
+        <div className="p-6 border-b">
+          <div className="flex items-center gap-2 font-bold text-xl text-primary">
+            <Terminal className="w-6 h-6" />
+            <span>Patra API</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Developer Documentation v1.0
           </p>
         </div>
-
-        {/* Authentication */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Key className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Authentication</h2>
+        <ScrollArea className="flex-1 py-4">
+          <div className="space-y-1 px-4">
+            {sections.map((section) => (
+              <Button
+                key={section.id}
+                variant={activeSection === section.id ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveSection(section.id)}
+              >
+                <section.icon className="w-4 h-4" />
+                {section.label}
+              </Button>
+            ))}
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Include your API key in the Authorization header:
-          </p>
-          <div className="bg-muted p-4 rounded-lg font-mono text-sm relative">
-            <pre className="break-all whitespace-pre-wrap">Authorization: Bearer {apiKey}</pre>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8"
-              onClick={() => handleCopy(`Authorization: Bearer ${apiKey}`, 'auth')}
-            >
-              {copiedEndpoint === 'auth' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
-          </div>
-        </Card>
+        </ScrollArea>
+        <div className="p-4 border-t">
+          <Button variant="outline" className="w-full gap-2" onClick={() => window.open('/dashboard', '_blank')}>
+            <Layout className="w-4 h-4" />
+            Developer Dashboard
+          </Button>
+        </div>
+      </div>
 
-        {/* Base URL */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Base URL</h2>
-          <div className="bg-muted p-4 rounded-lg font-mono text-sm flex items-center justify-between">
-            <code>{baseUrl}</code>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handleCopy(baseUrl, 'base')}
-            >
-              {copiedEndpoint === 'base' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
-          </div>
-        </Card>
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-4xl mx-auto p-8 space-y-12">
 
-        {/* Endpoints */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Endpoints</h2>
-          {endpoints.map((endpoint, index) => (
-            <Card key={index} className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Badge variant={endpoint.method === 'GET' ? 'default' : 'secondary'}>
-                    {endpoint.method}
-                  </Badge>
-                  <code className="text-sm font-mono">{endpoint.path}</code>
-                </div>
+          {/* Introduction */}
+          {activeSection === 'introduction' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div>
+                <h1 className="text-4xl font-bold mb-4">Patra API Documentation</h1>
+                <p className="text-xl text-muted-foreground">
+                  Integrate powerful digital identity features into your applications.
+                  Create users, fetch profiles, and embed cards with ease.
+                </p>
               </div>
-              
-              <p className="text-sm text-muted-foreground mb-4">{endpoint.description}</p>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Example Request</Label>
-                  <div className="bg-muted p-4 rounded-lg font-mono text-sm relative">
-                    <pre>{endpoint.method} {endpoint.example}</pre>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-500" />
+                      Fast Integration
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Get up and running in minutes with our RESTful API and drop-in embed scripts.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-blue-500" />
+                      Universal Embedding
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Display user cards on any website, blog, or app with a simple iframe or script tag.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* Authentication */}
+          {activeSection === 'authentication' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-3xl font-bold">Authentication</h2>
+              <p className="text-muted-foreground">
+                Authenticate your requests using your API key. You can find your keys in the Developer Dashboard.
+              </p>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Authorization Header</CardTitle>
+                  <CardDescription>Pass your API key in the header of your requests.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm relative group">
+                    <code>Authorization: Bearer sk_live_xxxxxxxxxxxxx</code>
                     <Button
-                      variant="ghost"
                       size="icon"
-                      className="absolute top-2 right-2 h-8 w-8"
-                      onClick={() => handleCopy(`${endpoint.method} ${endpoint.example}`, `req-${index}`)}
+                      variant="ghost"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleCopy('Authorization: Bearer sk_live_xxxxxxxxxxxxx', 'auth-header')}
                     >
-                      {copiedEndpoint === `req-${index}` ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copiedId === 'auth-header' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-                {endpoint.body && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-2 block">Request Body</Label>
-                    <div className="bg-muted p-4 rounded-lg font-mono text-sm relative">
-                      <pre>{JSON.stringify(endpoint.body, null, 2)}</pre>
+          {/* Endpoints */}
+          {activeSection === 'endpoints' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">Endpoints</h2>
+                <p className="text-muted-foreground">
+                  Explore our core API endpoints. Use the interactive playground to test them in real-time.
+                </p>
+              </div>
+
+              <Tabs defaultValue="get-user" className="w-full">
+                <TabsList className="w-full justify-start">
+                  <TabsTrigger value="get-user">Get User Details</TabsTrigger>
+                  <TabsTrigger value="search">Search Users</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="get-user" className="mt-6 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">GET</Badge>
+                    <code className="text-lg font-mono">/v1/cards/:username</code>
+                  </div>
+
+                  <p className="text-muted-foreground">
+                    Retrieve public details for a specific user card using their vanity URL (username).
+                  </p>
+
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Try it out</CardTitle>
+                      <CardDescription>Enter a username to fetch their details live from our database.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <Label htmlFor="username">Username</Label>
+                          <Input
+                            id="username"
+                            placeholder="e.g. johndoe"
+                            value={testUsername}
+                            onChange={(e) => setTestUsername(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button onClick={handleTestApi} disabled={isLoading}>
+                            {isLoading ? 'Fetching...' : 'Send Request'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {apiResponse && (
+                        <div className="mt-4">
+                          <Label>Response</Label>
+                          <div className="bg-slate-950 text-green-400 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96 relative group">
+                            <pre>{apiResponse}</pre>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-2 text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopy(apiResponse, 'api-response')}
+                            >
+                              {copiedId === 'api-response' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="search" className="mt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">GET</Badge>
+                    <code className="text-lg font-mono">/v1/cards/search</code>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Search for users by name, job title, or company. (Documentation only for this demo)
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+
+          {/* Embedding */}
+          {activeSection === 'embedding' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-3xl font-bold">Embedding</h2>
+              <p className="text-muted-foreground">
+                Embed Patra cards directly into your website. Use our generator to create the code snippet.
+              </p>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Embed Code Generator</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Username</Label>
+                      <Input
+                        placeholder="e.g. johndoe"
+                        value={embedUsername}
+                        onChange={(e) => setEmbedUsername(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Theme</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={embedTheme === 'light' ? 'default' : 'outline'}
+                          onClick={() => setEmbedTheme('light')}
+                          className="w-full"
+                        >
+                          Light
+                        </Button>
+                        <Button
+                          variant={embedTheme === 'dark' ? 'default' : 'outline'}
+                          onClick={() => setEmbedTheme('dark')}
+                          className="w-full"
+                        >
+                          Dark
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Generated Code</Label>
+                    <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm relative group">
+                      <pre className="whitespace-pre-wrap break-all">
+                        {`<div class="patra-embed" 
+     data-user="${embedUsername || 'USERNAME'}" 
+     data-theme="${embedTheme}">
+</div>
+<script src="https://patra.app/embed.js" async></script>`}
+                      </pre>
                       <Button
-                        variant="ghost"
                         size="icon"
-                        className="absolute top-2 right-2 h-8 w-8"
-                        onClick={() => handleCopy(JSON.stringify(endpoint.body, null, 2), `body-${index}`)}
+                        variant="ghost"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleCopy(
+                          `<div class="patra-embed" data-user="${embedUsername || 'USERNAME'}" data-theme="${embedTheme}"></div><script src="https://patra.app/embed.js" async></script>`,
+                          'embed-code'
+                        )}
                       >
-                        {copiedEndpoint === `body-${index}` ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copiedId === 'embed-code' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </Button>
                     </div>
                   </div>
-                )}
 
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Response</Label>
-                  <div className="bg-muted p-4 rounded-lg font-mono text-sm relative overflow-auto max-h-64">
-                    <pre>{JSON.stringify(endpoint.response, null, 2)}</pre>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8"
-                      onClick={() => handleCopy(JSON.stringify(endpoint.response, null, 2), `res-${index}`)}
-                    >
-                      {copiedEndpoint === `res-${index}` ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
+                  <div className="p-4 border rounded-lg bg-muted/50 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Preview of how the card will appear would go here.
+                    </p>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* SDKs */}
+          {activeSection === 'sdks' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-3xl font-bold">SDKs & Libraries</h2>
+              <p className="text-muted-foreground">
+                Official libraries to help you integrate faster.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="cursor-pointer hover:border-primary transition-colors">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="w-5 h-5" />
+                      Node.js
+                    </CardTitle>
+                    <CardDescription>npm install @patra/node</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="w-5 h-5" />
+                      Python
+                    </CardTitle>
+                    <CardDescription>pip install patra-python</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="w-5 h-5" />
+                      React
+                    </CardTitle>
+                    <CardDescription>npm install @patra/react</CardDescription>
+                  </CardHeader>
+                </Card>
               </div>
-            </Card>
-          ))}
+            </div>
+          )}
+
         </div>
-
-        {/* Code Examples */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Code className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Code Examples</h2>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <Label className="text-sm font-medium mb-2 block">JavaScript / Fetch</Label>
-              <div className="bg-muted p-4 rounded-lg font-mono text-sm relative">
-                <pre>{`fetch('${baseUrl}/cards/johndoe', {
-  headers: {
-    'Authorization': 'Bearer ${apiKey}'
-  }
-})
-.then(res => res.json())
-.then(data => console.log(data));`}</pre>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8"
-                  onClick={() => handleCopy(`fetch('${baseUrl}/cards/johndoe', {
-  headers: {
-    'Authorization': 'Bearer ${apiKey}'
-  }
-})
-.then(res => res.json())
-.then(data => console.log(data));`, 'js')}
-                >
-                  {copiedEndpoint === 'js' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Python / Requests</Label>
-              <div className="bg-muted p-4 rounded-lg font-mono text-sm relative">
-                <pre>{`import requests
-
-response = requests.get(
-    '${baseUrl}/cards/johndoe',
-    headers={'Authorization': 'Bearer ${apiKey}'}
-)
-data = response.json()`}</pre>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8"
-                  onClick={() => handleCopy(`import requests
-
-response = requests.get(
-    '${baseUrl}/cards/johndoe',
-    headers={'Authorization': 'Bearer ${apiKey}'}
-)
-data = response.json()`, 'py')}
-                >
-                  {copiedEndpoint === 'py' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Rate Limits */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Rate Limits</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Free tier: 100 requests/hour</li>
-            <li>• Pro tier: 1,000 requests/hour</li>
-            <li>• Enterprise: Custom limits</li>
-          </ul>
-        </Card>
       </div>
     </div>
   );

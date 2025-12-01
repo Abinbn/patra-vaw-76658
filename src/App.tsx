@@ -20,6 +20,7 @@ import { MyCard } from "./pages/mycard";
 import { YourselfAI } from "./pages/YourselfAI";
 import { EmailSignature } from "./pages/EmailSignature";
 import { ApiDocs } from "./pages/ApiDocs";
+import { DeveloperPortal } from "./pages/DeveloperPortal";
 import { Settings } from "./pages/Settings";
 import { DocsNew } from "./pages/DocsNew";
 import NotFound from "./pages/NotFound";
@@ -34,7 +35,7 @@ const queryClient = new QueryClient();
 // Landing page wrapper to redirect logged-in users
 const LandingPageWrapper = () => {
   const { user, loading } = useAuth();
-  
+
   if (loading) return null;
   if (user) return <Navigate to="/editor" replace />;
   return <Index />;
@@ -110,6 +111,14 @@ const App = () => (
               }
             />
             <Route path="/api-docs" element={<ApiDocs />} />
+            <Route
+              path="/developer"
+              element={
+                <ProtectedRoute>
+                  <DeveloperPortal />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/docs" element={<DocsNew />} />
             <Route
               path="/admin"
@@ -152,7 +161,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             /> */}
-            
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/:username/ai" element={<AIChat />} />
             <Route path="/:username" element={<PublicProfile />} />

@@ -55,7 +55,7 @@ export const AchievementsEditor: React.FC<AchievementsEditorProps> = ({ cardData
                             id="achievement-title"
                             value={newAchievement.title}
                             onChange={(e) => setNewAchievement({ ...newAchievement, title: e.target.value })}
-                            placeholder="e.g., Best Developer 2024"
+                            placeholder="Hackathon Winner 2025"
                         />
                     </div>
                     <div>
@@ -64,7 +64,7 @@ export const AchievementsEditor: React.FC<AchievementsEditorProps> = ({ cardData
                             id="achievement-issuer"
                             value={newAchievement.issuer}
                             onChange={(e) => setNewAchievement({ ...newAchievement, issuer: e.target.value })}
-                            placeholder="e.g., TechConf"
+                            placeholder="Global Tech Summit"
                         />
                     </div>
                     <div>
@@ -73,7 +73,7 @@ export const AchievementsEditor: React.FC<AchievementsEditorProps> = ({ cardData
                             id="achievement-date"
                             value={newAchievement.date}
                             onChange={(e) => setNewAchievement({ ...newAchievement, date: e.target.value })}
-                            placeholder="e.g., Dec 2024"
+                            placeholder="Dec 2024"
                         />
                     </div>
                     <div>

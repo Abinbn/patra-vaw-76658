@@ -373,11 +373,8 @@ export const EditorNew: React.FC = () => {
       setSidebarOpen(false);
       setShowMobilePreview(false);
       setInputPanelOpen(true);
-    } else {
-      // On desktop/tablet, collapse sidebar
-      setSidebarOpen(false);
-      setInputPanelOpen(true);
     }
+    // Desktop: Sidebar and Input Panel are always visible, so no state toggle needed
   };
 
   const handleBackToSidebar = () => {
@@ -587,21 +584,21 @@ export const EditorNew: React.FC = () => {
               scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent
               ${isMobile
                 ? (sidebarOpen ? 'w-full absolute inset-y-0 left-0 z-30' : 'hidden')
-                : (sidebarOpen ? 'w-full max-w-[450px] absolute inset-y-0 left-0 z-30' : 'hidden')
+                : 'w-64 flex-shrink-0' // Desktop: Fixed width, always visible
               }
             `}
             style={{
-              overflowY: sidebarOpen ? 'auto' : 'hidden',
+              overflowY: 'auto',
               maxHeight: 'calc(100vh - 4rem)'
             }}
           >
 
             <div className={`p-4 border-b border-border ${!sidebarOpen && !isMobile ? 'hidden' : ''}`}>
               <div className="flex items-center justify-between">
-                <h2 className={`font-semibold text-sm text-muted-foreground ${isMobile ? 'hidden' : ''}`}>
+                <h2 className="font-semibold text-sm text-muted-foreground">
                   Sections
                 </h2>
-                {!isMobile && (
+                {isMobile && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -641,7 +638,7 @@ export const EditorNew: React.FC = () => {
               })}
 
               {/* Divider/Spacer before redirection buttons */}
-              {sidebarOpen && cardData.vanityUrl && (
+              {cardData.vanityUrl && (
                 <div className="relative py-3 flex items-center justify-center">
                   <hr className="absolute inset-x-0 border-border" />
                   <div className="relative h-10" />
@@ -649,7 +646,7 @@ export const EditorNew: React.FC = () => {
               )}
 
               {/* Card, Analytics and Profile buttons */}
-              {sidebarOpen && cardData.vanityUrl && (
+              {cardData.vanityUrl && (
                 <>
                   <button
                     onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
@@ -707,22 +704,25 @@ export const EditorNew: React.FC = () => {
             className={`overflow-y-auto p-4 md:p-6 transition-all duration-300 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent bg-card border-r border-border
               ${isMobile
                 ? (showMobilePreview ? 'hidden' : 'w-full')
-                : (inputPanelOpen ? 'w-full max-w-[450px] absolute inset-y-0 left-0 z-20' : 'hidden')
+                : 'w-[500px] flex-shrink-0' // Desktop: Fixed width, always visible
               }`}
             style={{ maxHeight: 'calc(100vh - 4rem)' }}
           >
-            {/* Back button */}
-            <div className="flex items-center gap-2 mb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBackToSidebar}
-                className="h-8 w-8"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <h2 className="text-lg font-semibold capitalize">{activeSection}</h2>
-            </div>
+            {/* Back button - Mobile Only */}
+            {isMobile && (
+              <div className="flex items-center gap-2 mb-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleBackToSidebar}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <h2 className="text-lg font-semibold capitalize">{activeSection}</h2>
+              </div>
+            )}
+
             {renderSection()}
           </main>
         </div>

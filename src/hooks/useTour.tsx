@@ -15,9 +15,11 @@ export const useTour = (shouldStart: boolean) => {
     const driverObj = driver({
       showProgress: true,
       showButtons: ['next', 'previous', 'close'],
-      nextBtnText: 'Next',
-      prevBtnText: 'Previous',
-      doneBtnText: 'Done',
+      nextBtnText: 'Next →',
+      prevBtnText: '← Previous',
+      doneBtnText: 'Get Started! 🚀',
+      popoverClass: 'patra-tour-popover',
+      progressText: '{{current}} of {{total}}',
       steps: [
         {
           element: '[data-tour="avatar"]',
@@ -38,9 +40,18 @@ export const useTour = (shouldStart: boolean) => {
           }
         },
         {
-          element: '[data-tour="social"]',
+          element: '[data-tour="location"]',
           popover: {
-            title: 'Social Links',
+            title: 'Location',
+            description: 'Share your location with an interactive map to help people find you.',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="verified"]',
+          popover: {
+            title: 'Social Accounts',
             description: 'Connect your social media accounts to make it easy for people to find you online.',
             side: 'right',
             align: 'start'
@@ -60,6 +71,15 @@ export const useTour = (shouldStart: boolean) => {
           popover: {
             title: 'Custom Links',
             description: 'Add any custom links you want to share - portfolio, website, or anything else!',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="interests"]',
+          popover: {
+            title: 'Interests',
+            description: 'Share your hobbies and interests to help people connect with you.',
             side: 'right',
             align: 'start'
           }
@@ -101,7 +121,16 @@ export const useTour = (shouldStart: boolean) => {
           }
         },
         {
-          element: '[data-tour="ai-profile"]',
+          element: '[data-tour="cardlayout"]',
+          popover: {
+            title: 'Card Layout',
+            description: 'Organize and reorder sections on your card to match your preferences.',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="aiprofile"]',
           popover: {
             title: 'AI Profile Assistant',
             description: 'Enable AI to let people chat with your digital profile! Powered by Patra AI.',

@@ -326,3 +326,105 @@ All colors MUST be HSL.
     filter: drop-shadow(0 0 40px hsl(var(--primary) / 0.6));
   }
 }
+
+/* Enhanced Tour Styling */
+.patra-tour-popover .driver-popover {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 20px 60px hsl(var(--foreground) / 0.15), 
+              0 0 0 1px hsl(var(--primary) / 0.1) !important;
+  border-radius: 1rem !important;
+  padding: 0 !important;
+  max-width: 380px !important;
+}
+
+.patra-tour-popover .driver-popover-title {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: hsl(var(--foreground)) !important;
+  margin: 0 !important;
+  padding: 1.25rem 1.5rem 0.5rem !important;
+  line-height: 1.4 !important;
+}
+
+.patra-tour-popover .driver-popover-description {
+  font-size: 0.9375rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  line-height: 1.6 !important;
+  padding: 0 1.5rem 1.25rem !important;
+  margin: 0 !important;
+}
+
+.patra-tour-popover .driver-popover-footer {
+  padding: 1rem 1.5rem !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--muted) / 0.3) !important;
+  border-radius: 0 0 1rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.patra-tour-popover .driver-popover-progress-text {
+  font-size: 0.8125rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  font-weight: 500 !important;
+}
+
+.patra-tour-popover .driver-popover-btn {
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.patra-tour-popover .driver-popover-next-btn {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.patra-tour-popover .driver-popover-next-btn:hover {
+  background: hsl(var(--primary-dark)) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.3) !important;
+}
+
+.patra-tour-popover .driver-popover-prev-btn {
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.patra-tour-popover .driver-popover-prev-btn:hover {
+  background: hsl(var(--muted)) !important;
+}
+
+.patra-tour-popover .driver-popover-close-btn {
+  background: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: absolute !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  padding: 0 !important;
+  border-radius: 0.375rem !important;
+}
+
+.patra-tour-popover .driver-popover-close-btn:hover {
+  background: hsl(var(--muted)) !important;
+}
+
+.driver-overlay {
+  background: hsl(var(--background) / 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.driver-active-element {
+  border-radius: 0.75rem !important;
+}

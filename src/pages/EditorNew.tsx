@@ -131,6 +131,7 @@ export const EditorNew: React.FC = () => {
   const [aiProfileExpanded, setAiProfileExpanded] = useState(false);
 
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [shouldStartTour, setShouldStartTour] = useState(false);
 
   // Video intro state
   const [showVideoIntro, setShowVideoIntro] = useState(false);
@@ -158,6 +159,203 @@ export const EditorNew: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchExistingCard();
+      fetchAIStatus();
+
+      // Check for selected template and apply it
+      const selectedTemplate = localStorage.getItem('selectedTemplate');
+      if (selectedTemplate) {
+        // Import template and apply its styles
+        import('@/types/template').then((module) => {
+          const allTemplates = [...module.defaultCardTemplates, ...module.defaultProfileTemplates];
+          const template = allTemplates.find(t => t.id === selectedTemplate);
+          if (template) {
+            setCardData(prev => ({
+              ...prev,
+              customCSS: template.style.customCSS || prev.customCSS,
+            }));
+          }
+        });
+        // Clear the selection after applying
+        localStorage.removeItem('selectedTemplate');
+      }
+
+      // Show video intro on first visit
+      const hasSeenIntro = localStorage.getItem('patra_video_intro_seen');
+      const hasCompletedTour = localStorage.getItem('patra-tour-completed') === 'true';
+
+      if (!hasSeenIntro) {
+        // Delay to allow editor to load first
+        setTimeout(() => setShowVideoIntro(true), 1000);
+      } else if (!hasCompletedTour) {
+        // If video already seen but tour not completed, start tour immediately
+        setShouldStartTour(true);
+      }
+    }
+  }, [user]);
+
+  // Initialize guided tour - will start only when shouldStartTour is true
+  useTour(shouldStartTour);
+
+  const fetchAIStatus = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('ai_enabled')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) {
+      setAiEnabled(data.ai_enabled || false);
+    }
+  };
+
+  const handleAIToggle = async (enabled: boolean) => {
+    if (enabled && !aiEnabled) {
+      setShowAIConsent(true);
+    } else {
+      await updateAIStatus(enabled);
+    }
+  };
+
+  const handleAIConsentAccept = async () => {
+    await updateAIStatus(true);
+    setShowAIConsent(false);
+  };
+
+  const updateAIStatus = async (enabled: boolean) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ai_enabled: enabled,
+        ai_consent_given_at: enabled ? new Date().toISOString() : null
+      })
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update AI settings',
+        variant: 'destructive',
+      });
+    } else {
+      setAiEnabled(enabled);
+      toast({
+        title: enabled ? 'AI Enabled' : 'AI Disabled',
+        description: enabled
+          ? 'Your AI assistant is now active!'
+          : 'Your AI assistant has been disabled.',
+      });
+    }
+  };
+
+  const fetchExistingCard = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch both digital card and profile data
+      const [cardResult, profileResult] = await Promise.all([
+        supabase
+          .from('digital_cards')
+          .select('*')
+          .eq('owner_user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('address, show_address_map, location_coordinates')
+          .eq('user_id', user.id)
+          .maybeSingle()
+      ]);
+
+      if (cardResult.error && cardResult.error.code !== 'PGRST116') throw cardResult.error;
+
+      if (cardResult.data && cardResult.data.content_json) {
+        const incoming = cardResult.data.content_json as Partial<CardData>;
+        const profileData = profileResult.data;
+
+        // Parse location coordinates if available
+        let lat = null;
+        let lng = null;
+        if (profileData?.location_coordinates) {
+          const coords = String(profileData.location_coordinates).replace(/[()]/g, '').split(',');
+          if (coords.length === 2) {
+            lat = parseFloat(coords[0].trim());
+            lng = parseFloat(coords[1].trim());
+          }
+        }
+        // Ensure new Location section exists in order/visibility
+        const defaultOrder = ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages', 'location'];
+        const computedOrder = Array.isArray(incoming.cardOrder) && incoming.cardOrder.length
+          ? (incoming.cardOrder.includes('location') ? incoming.cardOrder : [...incoming.cardOrder, 'location'])
+          : defaultOrder;
+
+        const defaultVisibility = {
+          contact: true,
+          verified: true,
+          links: true,
+          achievements: true,
+          testimonials: true,
+          interests: true,
+          gallery: true,
+          languages: true,
+          location: true,
+        };
+
+        const computedVisibility = incoming.cardVisibility
+          ? { ...defaultVisibility, ...incoming.cardVisibility }
+          : defaultVisibility;
+
+        setCardData((prev) => ({
+          ...prev,
+          ...incoming,
+          languages: Array.isArray(incoming.languages) ? incoming.languages : [],
+          socialLinks: Array.isArray(incoming.socialLinks) ? incoming.socialLinks : [],
+          paymentLinks: Array.isArray(incoming.paymentLinks) ? incoming.paymentLinks : [],
+          customLinks: Array.isArray(incoming.customLinks) ? incoming.customLinks : [],
+          linkGroups: Array.isArray(incoming.linkGroups) ? incoming.linkGroups : [],
+          interests: Array.isArray(incoming.interests) ? incoming.interests : [],
+          achievements: Array.isArray(incoming.achievements) ? incoming.achievements : [],
+          testimonials: Array.isArray(incoming.testimonials) ? incoming.testimonials : [],
+          photos: Array.isArray(incoming.photos) ? incoming.photos : [],
+          fullName: incoming.fullName ?? '',
+          about: incoming.about ?? '',
+          location: incoming.location ?? '',
+          pronunciation: incoming.pronunciation ?? '',
+          pronoun: incoming.pronoun ?? '',
+          audioPronunciation: incoming.audioPronunciation ?? '',
+          jobTitle: incoming.jobTitle ?? '',
+          company: incoming.company ?? '',
+          email: incoming.email ?? '',
+          phone: incoming.phone ?? '',
+          contactForm: incoming.contactForm ?? '',
+          calendar: incoming.calendar ?? '',
+          avatarUrl: incoming.avatarUrl ?? '',
+          vanityUrl: incoming.vanityUrl ?? '',
+          upiId: incoming.upiId ?? '',
+          videoIntro: incoming.videoIntro ?? '',
+          theme: incoming.theme ?? 'default',
+          customCSS: incoming.customCSS ?? '',
+          bannerType: incoming.bannerType ?? 'gradient',
+          bannerValue: incoming.bannerValue ?? '',
+          cardOrder: computedOrder,
+          cardVisibility: computedVisibility,
+          address: profileData?.address ?? incoming.address ?? '',
+          showAddressMap: profileData?.show_address_map ?? incoming.showAddressMap ?? false,
+          latitude: lat ?? incoming.latitude ?? null,
+          longitude: lng ?? incoming.longitude ?? null,
+          mapUrl: incoming.mapUrl ?? '',
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching card:', error);
+    }
+  };
 
   const toggleMobilePreview = () => {
     setShowMobilePreview(!showMobilePreview);
@@ -306,14 +504,6 @@ export const EditorNew: React.FC = () => {
       <header className="border-b border-border bg-card sticky top-0 z-50 overflow-x-auto">
         <div className="px-4 h-16 flex items-center justify-between min-w-max">
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="h-8 w-8"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-primary-foreground" />
             </div>

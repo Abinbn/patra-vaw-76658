@@ -20,7 +20,7 @@ Authentication to the API is performed via HTTP Basic Auth. Provide your API key
 
 ```bash
 curl https://api.patra.app/v1/cards/johndoe \
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc:
+  -u YOUR_API_KEY_HERE:
 ```
 
 ## Endpoints

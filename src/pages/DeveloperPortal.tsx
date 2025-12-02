@@ -79,7 +79,7 @@ export const DeveloperPortal: React.FC = () => {
             {
                 id: '1',
                 name: 'Production API',
-                key: 'sk_live_4eC39HqLyjWDarjtT1zdp7dc',
+                key: 'pk_live_XXXXXXXXXXXXXXXXXXXXXXXX',
                 created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
                 last_used: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
                 requests_count: 12453
@@ -87,7 +87,7 @@ export const DeveloperPortal: React.FC = () => {
             {
                 id: '2',
                 name: 'Development API',
-                key: 'sk_test_BQokikJOvBiI2HlWgH4olfQ2',
+                key: 'pk_test_XXXXXXXXXXXXXXXXXXXXXXXX',
                 created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
                 last_used: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
                 requests_count: 3421

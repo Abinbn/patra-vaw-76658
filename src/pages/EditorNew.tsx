@@ -490,7 +490,7 @@ export const EditorNew: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Video Intro Dialog */}
       {showVideoIntro && <VideoIntro onClose={() => {
         setShowVideoIntro(false);
@@ -543,7 +543,7 @@ export const EditorNew: React.FC = () => {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex overflow-hidden scrollbar-thin">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Column - Editor */}
         <div className={`flex flex-col border-r border-border bg-card overflow-hidden transition-all duration-300
             ${isMobile ? (showMobilePreview ? 'hidden' : 'w-full') : 'w-[500px] flex-shrink-0'}
@@ -677,7 +677,7 @@ export const EditorNew: React.FC = () => {
                   cardData.theme === 'minimal' ? 'bg-background' :
                     'bg-muted/30'
               }`}
-            style={{ maxHeight: 'calc(100vh - 4rem)' }}
+            style={{ height: '100%' }}
           >
             <div className="max-w-md mx-auto">
               <div className="flex items-center justify-between mb-4">
@@ -736,7 +736,7 @@ export const EditorNew: React.FC = () => {
 
       {/* Mobile Save Button */}
       {isMobile && !showMobilePreview && (
-        <div className="sticky bottom-0 left-0 right-0 p-4 bg-card border-t border-border z-20">
+        <div className="border-t border-border bg-card p-4 z-20 shrink-0">
           <Button onClick={() => handleSave()} disabled={loading} className="w-full">
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>

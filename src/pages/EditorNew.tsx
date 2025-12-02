@@ -543,84 +543,120 @@ export const EditorNew: React.FC = () => {
 
       {/* Main */}
       <div className="flex-1 flex overflow-hidden scrollbar-thin">
-        {/* Left Column - Editor (Accordion) */}
+        {/* Left Column - Editor */}
         <div className={`flex flex-col border-r border-border bg-card overflow-hidden transition-all duration-300
             ${isMobile ? (showMobilePreview ? 'hidden' : 'w-full') : 'w-[500px] flex-shrink-0'}
         `}>
-          <div className="flex-1 overflow-y-auto scrollbar-thin">
-            <Accordion type="single" collapsible value={activeSection} onValueChange={setActiveSection}>
+          {/* Mobile Navigation Tabs */}
+          {isMobile && (
+            <div className="flex overflow-x-auto border-b border-border bg-muted/10 scrollbar-none">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isAIProfile = item.id === 'aiprofile';
+                const isActive = activeSection === item.id;
                 return (
-                  <AccordionItem value={item.id} key={item.id}>
-                    <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50 ${isAIProfile && aiEnabled ? 'relative overflow-hidden' : ''}`}>
-                      {isAIProfile && aiEnabled && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer pointer-events-none" />
-                      )}
-                      <div className="flex items-center gap-3 relative z-10">
-                        <Icon className="w-5 h-5 text-muted-foreground" />
-                        <span>{item.label}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4 border-t bg-background">
-                      {renderSection(item.id)}
-                    </AccordionContent>
-                  </AccordionItem>
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`flex flex-col items-center justify-center min-w-[4.5rem] py-3 px-1 gap-1 transition-colors border-b-2 ${isActive
+                      ? 'border-primary text-primary bg-background'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'
+                      }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                  </button>
                 );
               })}
-            </Accordion>
+            </div>
+          )}
 
-            {/* Extra Links */}
-            {cardData.vanityUrl && (
-              <div className="p-4 border-t space-y-1 mt-4">
-                <button
-                  onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left hover:bg-muted"
-                >
-                  <CreditCard className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium text-sm">Card</span>
-                </button>
-
-                <button
-                  onClick={() => window.open('/analytics', '_blank')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left hover:bg-muted"
-                >
-                  <ExternalLink className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium text-sm">Analytics</span>
-                </button>
-
-                <button
-                  onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left hover:bg-muted"
-                >
-                  <Eye className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium text-sm">Profile</span>
-                </button>
-
-                {/* Card URL display with copy button */}
-                <div className="pt-2">
-                  <div className="flex items-center gap-2 p-2 border border-border rounded-lg bg-muted/30">
-                    <span className="text-sm flex-1 truncate font-mono">
-                      patra.me/{cardData.vanityUrl}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={handleCopyUrl}
-                      title="Copy URL"
+          <div className="flex flex-1 overflow-hidden">
+            {/* Desktop/Tablet Navigation Rail */}
+            {!isMobile && (
+              <div className="w-16 flex-none border-r border-border bg-muted/10 flex flex-col items-center py-4 gap-2 overflow-y-auto scrollbar-none">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      data-tour={item.id}
+                      onClick={() => setActiveSection(item.id)}
+                      title={item.label}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${isActive
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
                     >
-                      {copiedUrl ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                      <Icon className="w-5 h-5" />
+                    </button>
+                  );
+                })}
+
+                <div className="w-8 h-[1px] bg-border my-2" />
+
+                {/* Extra Links Icons */}
+                {cardData.vanityUrl && (
+                  <>
+                    <button
+                      onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
+                      title="View Card"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                    >
+                      <CreditCard className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => window.open('/analytics', '_blank')}
+                      title="Analytics"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
+                      title="View Profile"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
               </div>
             )}
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
+              <div className="max-w-xl mx-auto">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">
+                      {navItems.find(n => n.id === activeSection)?.label}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Customize your {navItems.find(n => n.id === activeSection)?.label.toLowerCase()} settings
+                    </p>
+                  </div>
+                  {/* Card URL Copy for Desktop */}
+                  {!isMobile && cardData.vanityUrl && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2 text-xs"
+                        onClick={handleCopyUrl}
+                      >
+                        {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copiedUrl ? 'Copied' : 'Copy Link'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {renderSection(activeSection)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

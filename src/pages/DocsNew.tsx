@@ -198,14 +198,47 @@ export const DocsNew: React.FC = () => {
             <div>
               <h1 className="text-4xl font-bold mb-4">Dashboard</h1>
               <p className="text-lg text-muted-foreground">
-                Your central command center
+                Your central command center for managing your digital presence
               </p>
             </div>
+            
             <Card>
-              <CardContent className="pt-6">
-                <p className="mb-4">
-                  The Dashboard (<code>/dashboard</code>) provides an overview of your digital presence. Here you can see recent activity, quick stats, and access common actions.
+              <CardHeader>
+                <CardTitle>Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p>
+                  The Dashboard (<code>/dashboard</code>) is your home base in Patra. It provides a comprehensive overview of your digital card's performance and quick access to key features.
                 </p>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="font-semibold mb-3">Key Features</h4>
+                  <div className="grid gap-3">
+                    <div className="flex items-start gap-3 p-3 border rounded-lg">
+                      <BarChart3 className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-medium">Quick Stats</div>
+                        <div className="text-sm text-muted-foreground">View total views, unique visitors, and engagement metrics at a glance</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 border rounded-lg">
+                      <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-medium">Card Gallery</div>
+                        <div className="text-sm text-muted-foreground">Browse and manage all your digital cards in one place</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 border rounded-lg">
+                      <Rocket className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-medium">Quick Actions</div>
+                        <div className="text-sm text-muted-foreground">Create new cards, access editor, view analytics, and more</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -217,21 +250,70 @@ export const DocsNew: React.FC = () => {
             <div>
               <h1 className="text-4xl font-bold mb-4">Analytics</h1>
               <p className="text-lg text-muted-foreground">
-                Track your performance
+                Track your performance and understand your audience
               </p>
             </div>
+            
             <Card>
-              <CardContent className="pt-6">
-                <p className="mb-4">
-                  The Analytics page (<code>/analytics</code>) offers deep insights into how your card is performing.
+              <CardHeader>
+                <CardTitle>Performance Insights</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p>
+                  The Analytics page (<code>/analytics</code>) offers deep insights into how your card is performing. Make data-driven decisions to optimize your digital presence.
                 </p>
-                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                  <li><strong>Views:</strong> Total number of times your profile has been viewed.</li>
-                  <li><strong>Unique Visitors:</strong> Number of distinct people who visited your profile.</li>
-                  <li><strong>Click-through Rate:</strong> Percentage of visitors who clicked on your links.</li>
-                  <li><strong>Device Breakdown:</strong> See if your visitors are using Mobile or Desktop.</li>
-                  <li><strong>Location Data:</strong> Understand where your audience is located.</li>
-                </ul>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="font-semibold mb-3">Metrics Available</h4>
+                  <div className="grid gap-2">
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Total Views:</strong> <span className="text-muted-foreground">Track how many times your profile has been viewed</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Unique Visitors:</strong> <span className="text-muted-foreground">Number of distinct people who visited your profile</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Click-through Rate:</strong> <span className="text-muted-foreground">Percentage of visitors who clicked on your links</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Device Breakdown:</strong> <span className="text-muted-foreground">See if your visitors are using Mobile or Desktop</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Geographic Data:</strong> <span className="text-muted-foreground">Understand where your audience is located</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                      <div>
+                        <strong>Time-based Trends:</strong> <span className="text-muted-foreground">View performance over time with interactive charts</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>💡 Pro Tip:</strong> Check your analytics regularly to understand peak engagement times and optimize when you share your card.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>

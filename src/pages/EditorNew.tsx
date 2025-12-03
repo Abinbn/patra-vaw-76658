@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useTour } from '@/hooks/useTour';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -601,15 +602,34 @@ export const EditorNew: React.FC = () => {
               <CreditCard className="w-5 h-5 text-primary-foreground" />
             </div>
             <h1 className="text-xl font-semibold hidden sm:block">Patra</h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-2 text-muted-foreground"
-              onClick={() => setShouldStartTour(true)}
-            >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Help
-            </Button>
+            {isMobile && cardData.vanityUrl && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2 text-muted-foreground"
+                  >
+                    <Menu className="w-4 h-4 mr-2" />
+                    Menu
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    View Card
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.open('/analytics', '_blank')}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -683,268 +703,241 @@ export const EditorNew: React.FC = () => {
                   );
                 })}
               </div>
-
-              {/* Mobile Quick Actions */}
-              {cardData.vanityUrl && (
-                <div className="flex items-center gap-2 p-2 border-b border-border bg-muted/5">
-                  <button
-                    onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Card
-                  </button>
-                  <button
-                    onClick={() => window.open('/analytics', '_blank')}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    Analytics
-                  </button>
-                  <button
-                    onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Profile
-                  </button>
-                </div>
-              )}
-            </>
+            
           )}
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Desktop/Tablet Navigation Rail */}
-            {!isMobile && (
-              <div className={`flex-none border-r border-border bg-muted/10 flex flex-col items-center py-6 gap-2 overflow-y-auto scrollbar-thin transition-all duration-300 ${isSidebarExpanded ? 'w-48 items-start px-3' : 'w-18'}`}>
+              <div className="flex flex-1 overflow-hidden">
+                {/* Desktop/Tablet Navigation Rail */}
+                {!isMobile && (
+                  <div className={`flex-none border-r border-border bg-muted/10 flex flex-col items-center py-6 gap-2 overflow-y-auto scrollbar-thin transition-all duration-300 ${isSidebarExpanded ? 'w-48 items-start px-3' : 'w-18'}`}>
 
-                {/* Expand/Collapse Toggle */}
-                <div className={`w-full flex ${isSidebarExpanded ? 'justify-end' : 'justify-center'} mb-4`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                  >
-                    {isSidebarExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </Button>
-                </div>
-
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeSection === item.id;
-
-                  if (isSidebarExpanded) {
-                    return (
-                      <button
-                        key={item.id}
-                        data-tour={item.id}
-                        onClick={() => {
-                          setActiveSection(item.id);
-                          setSearchParams({ tab: item.id });
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${isActive
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          }`}
+                    {/* Expand/Collapse Toggle */}
+                    <div className={`w-full flex ${isSidebarExpanded ? 'justify-end' : 'justify-center'} mb-4`}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </button>
-                    );
-                  }
+                        {isSidebarExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </Button>
+                    </div>
 
-                  return (
-                    <TooltipProvider key={item.id}>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeSection === item.id;
+
+                      if (isSidebarExpanded) {
+                        return (
                           <button
+                            key={item.id}
                             data-tour={item.id}
                             onClick={() => {
                               setActiveSection(item.id);
                               setSearchParams({ tab: item.id });
                             }}
-                            className={`w-10 h-10 my-1 rounded-lg flex items-center justify-center transition-all ${isActive
-                              ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${isActive
+                              ? 'bg-primary text-primary-foreground shadow-sm'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                               }`}
                           >
-                            <Icon className="w-5 h-5" />
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            <span className="truncate">{item.label}</span>
                           </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">
-                          <p>{item.label}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })}
+                        );
+                      }
 
-                {!isSidebarExpanded && <div className="w-8 h-[1px] bg-border my-2" />}
+                      return (
+                        <TooltipProvider key={item.id}>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <button
+                                data-tour={item.id}
+                                onClick={() => {
+                                  setActiveSection(item.id);
+                                  setSearchParams({ tab: item.id });
+                                }}
+                                className={`w-10 h-10 my-1 rounded-lg flex items-center justify-center transition-all ${isActive
+                                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  }`}
+                              >
+                                <Icon className="w-5 h-5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">
+                              <p>{item.label}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })}
 
-                {/* Extra Links Icons */}
-                {cardData.vanityUrl && (
-                  <>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
-                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
-                          >
-                            <CreditCard className="w-5 h-5" />
-                            {isSidebarExpanded && <span className="text-sm font-medium">View Card</span>}
-                          </button>
-                        </TooltipTrigger>
-                        {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">View Card</TooltipContent>}
-                      </Tooltip>
-                    </TooltipProvider>
+                    {!isSidebarExpanded && <div className="w-8 h-[1px] bg-border my-2" />}
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => window.open('/analytics', '_blank')}
-                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
-                          >
-                            <BarChart3 className="w-5 h-5" />
-                            {isSidebarExpanded && <span className="text-sm font-medium">Analytics</span>}
-                          </button>
-                        </TooltipTrigger>
-                        {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">Analytics</TooltipContent>}
-                      </Tooltip>
-                    </TooltipProvider>
+                    {/* Extra Links Icons */}
+                    {cardData.vanityUrl && (
+                      <>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
+                                className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
+                              >
+                                <CreditCard className="w-5 h-5" />
+                                {isSidebarExpanded && <span className="text-sm font-medium">View Card</span>}
+                              </button>
+                            </TooltipTrigger>
+                            {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">View Card</TooltipContent>}
+                          </Tooltip>
+                        </TooltipProvider>
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
-                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
-                          >
-                            <Eye className="w-5 h-5" />
-                            {isSidebarExpanded && <span className="text-sm font-medium">View Profile</span>}
-                          </button>
-                        </TooltipTrigger>
-                        {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">View Profile</TooltipContent>}
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
-                )}
-              </div>
-            )}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => window.open('/analytics', '_blank')}
+                                className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
+                              >
+                                <BarChart3 className="w-5 h-5" />
+                                {isSidebarExpanded && <span className="text-sm font-medium">Analytics</span>}
+                              </button>
+                            </TooltipTrigger>
+                            {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">Analytics</TooltipContent>}
+                          </Tooltip>
+                        </TooltipProvider>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
-              <div className="max-w-xl mx-auto">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight">
-                      {navItems.find(n => n.id === activeSection)?.label}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Customize your {navItems.find(n => n.id === activeSection)?.label.toLowerCase()} settings
-                    </p>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
+                                className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-10 h-10 my-1'}`}
+                              >
+                                <Eye className="w-5 h-5" />
+                                {isSidebarExpanded && <span className="text-sm font-medium">View Profile</span>}
+                              </button>
+                            </TooltipTrigger>
+                            {!isSidebarExpanded && <TooltipContent side="right" className="bg-primary text-primary-foreground border-primary">View Profile</TooltipContent>}
+                          </Tooltip>
+                        </TooltipProvider>
+                      </>
+                    )}
                   </div>
-                  {/* Card URL Copy for Desktop */}
-                  {!isMobile && cardData.vanityUrl && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-2 text-xs"
-                        onClick={handleCopyUrl}
-                      >
-                        {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copiedUrl ? 'Copied' : 'Copy Link'}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                )}
 
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {renderSection(activeSection)}
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
+                  <div className="max-w-xl mx-auto">
+                    <div className="mb-6 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                          {navItems.find(n => n.id === activeSection)?.label}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Customize your {navItems.find(n => n.id === activeSection)?.label.toLowerCase()} settings
+                        </p>
+                      </div>
+                      {/* Card URL Copy for Desktop */}
+                      {!isMobile && cardData.vanityUrl && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-2 text-xs"
+                            onClick={handleCopyUrl}
+                          >
+                            {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copiedUrl ? 'Copied' : 'Copy Link'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      {renderSection(activeSection)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right Column - Preview (Desktop/Tablet) */}
-        {!isMobile && (
-          <aside
-            data-tour="preview"
-            className={`flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
+          {/* Right Column - Preview (Desktop/Tablet) */}
+          {!isMobile && (
+            <aside
+              data-tour="preview"
+              className={`flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
+                cardData.theme === 'vibrant' ? 'bg-gradient-to-br from-purple-400 to-pink-600' :
+                  cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
+                    cardData.theme === 'minimal' ? 'bg-background' :
+                      'bg-muted/30'
+                }`}
+              style={{ height: '100%' }}
+            >
+              <div className="max-w-md mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-medium text-muted-foreground">Live Preview</div>
+                </div>
+                <CardPreviewNew cardData={{ ...cardData, aiEnabled }} onOpenPayment={() => setShowPaymentDialog(true)} showAIButton={true} />
+              </div>
+            </aside>
+          )}
+
+          {/* Preview Column - Mobile */}
+          {isMobile && showMobilePreview && (
+            <div className={`fixed inset-0 top-16 z-40 overflow-y-auto scrollbar-thin p-4 transition-transform duration-300 ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
               cardData.theme === 'vibrant' ? 'bg-gradient-to-br from-purple-400 to-pink-600' :
                 cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
                   cardData.theme === 'minimal' ? 'bg-background' :
-                    'bg-muted/30'
-              }`}
-            style={{ height: '100%' }}
-          >
-            <div className="max-w-md mx-auto">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-medium text-muted-foreground">Live Preview</div>
-              </div>
+                    'bg-background'
+              }`}>
               <CardPreviewNew cardData={{ ...cardData, aiEnabled }} onOpenPayment={() => setShowPaymentDialog(true)} showAIButton={true} />
             </div>
-          </aside>
-        )}
+          )}
+        </div>
 
-        {/* Preview Column - Mobile */}
-        {isMobile && showMobilePreview && (
-          <div className={`fixed inset-0 top-16 z-40 overflow-y-auto scrollbar-thin p-4 transition-transform duration-300 ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
-            cardData.theme === 'vibrant' ? 'bg-gradient-to-br from-purple-400 to-pink-600' :
-              cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
-                cardData.theme === 'minimal' ? 'bg-background' :
-                  'bg-background'
-            }`}>
-            <CardPreviewNew cardData={{ ...cardData, aiEnabled }} onOpenPayment={() => setShowPaymentDialog(true)} showAIButton={true} />
+        {/* AI Consent Dialog */}
+        <Dialog open={showAIConsent} onOpenChange={setShowAIConsent}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enable AI Assistant</DialogTitle>
+              <DialogDescription>
+                By enabling this feature, you consent to train an AI assistant with your profile data.
+                This AI will represent you in conversations with visitors on your profile page.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-3">
+              <p className="text-sm">The AI will use:</p>
+              <ul className="text-sm space-y-2 list-disc list-inside text-muted-foreground">
+                <li>Your name, job title, and bio</li>
+                <li>Your skills, interests, and achievements</li>
+                <li>Your social links and contact information</li>
+                <li>Any testimonials and media you've added</li>
+              </ul>
+              <p className="text-sm text-muted-foreground mt-4">
+                Visitors will be able to chat with your AI clone to learn more about you and your work.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAIConsent(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAIConsentAccept}>
+                I Consent, Enable AI
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mobile Save Button */}
+        {isMobile && !showMobilePreview && (
+          <div className="border-t border-border bg-card p-4 z-20 shrink-0">
+            <Button onClick={() => handleSave()} disabled={loading} className="w-full">
+              {loading ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         )}
       </div>
-
-      {/* AI Consent Dialog */}
-      <Dialog open={showAIConsent} onOpenChange={setShowAIConsent}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enable AI Assistant</DialogTitle>
-            <DialogDescription>
-              By enabling this feature, you consent to train an AI assistant with your profile data.
-              This AI will represent you in conversations with visitors on your profile page.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            <p className="text-sm">The AI will use:</p>
-            <ul className="text-sm space-y-2 list-disc list-inside text-muted-foreground">
-              <li>Your name, job title, and bio</li>
-              <li>Your skills, interests, and achievements</li>
-              <li>Your social links and contact information</li>
-              <li>Any testimonials and media you've added</li>
-            </ul>
-            <p className="text-sm text-muted-foreground mt-4">
-              Visitors will be able to chat with your AI clone to learn more about you and your work.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAIConsent(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAIConsentAccept}>
-              I Consent, Enable AI
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Mobile Save Button */}
-      {isMobile && !showMobilePreview && (
-        <div className="border-t border-border bg-card p-4 z-20 shrink-0">
-          <Button onClick={() => handleSave()} disabled={loading} className="w-full">
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+      );
 };

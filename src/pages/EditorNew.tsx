@@ -649,7 +649,7 @@ export const EditorNew: React.FC = () => {
                               setActiveSection(item.id);
                               setSearchParams({ tab: item.id });
                             }}
-                            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isActive
+                            className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all ${isActive
                               ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                               }`}
@@ -675,7 +675,7 @@ export const EditorNew: React.FC = () => {
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
-                            className={`rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
+                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
                           >
                             <CreditCard className="w-5 h-5" />
                             {isSidebarExpanded && <span className="text-sm font-medium">View Card</span>}
@@ -690,7 +690,7 @@ export const EditorNew: React.FC = () => {
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => window.open('/analytics', '_blank')}
-                            className={`rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
+                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
                           >
                             <ExternalLink className="w-5 h-5" />
                             {isSidebarExpanded && <span className="text-sm font-medium">Analytics</span>}
@@ -705,7 +705,7 @@ export const EditorNew: React.FC = () => {
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
-                            className={`rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
+                            className={`rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all ${isSidebarExpanded ? 'w-full px-3 py-2.5 gap-3 justify-start' : 'w-11 h-11'}`}
                           >
                             <Eye className="w-5 h-5" />
                             {isSidebarExpanded && <span className="text-sm font-medium">View Profile</span>}

@@ -331,7 +331,7 @@ export const Templates: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-6">
             <Button
               variant="outline"
-              className="h-auto p-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 transition-all group"
+              className="h-auto p-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all group"
               onClick={() => handleApplyTemplate('card')}
               disabled={saving}
             >
@@ -340,13 +340,13 @@ export const Templates: React.FC = () => {
               </div>
               <div className="text-center">
                 <span className="font-semibold block">Card Only</span>
-                <span className="text-xs text-muted-foreground">Digital card background</span>
+                <span className="text-xs text-muted-foreground group-hover:text-primary/80">Digital card background</span>
               </div>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto p-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 transition-all group"
+              className="h-auto p-6 flex flex-col items-center gap-3 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all group"
               onClick={() => handleApplyTemplate('profile')}
               disabled={saving}
             >
@@ -355,13 +355,13 @@ export const Templates: React.FC = () => {
               </div>
               <div className="text-center">
                 <span className="font-semibold block">Profile Only</span>
-                <span className="text-xs text-muted-foreground">Profile banner image</span>
+                <span className="text-xs text-muted-foreground group-hover:text-primary/80">Profile banner image</span>
               </div>
             </Button>
 
             <Button
               variant="default"
-              className="sm:col-span-2 h-auto p-4 flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+              className="sm:col-span-2 h-auto p-4 flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               onClick={() => handleApplyTemplate('both')}
               disabled={saving}
             >

@@ -37,6 +37,7 @@ import {
   LogOut,
   BarChart3
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import {
   Accordion,
   AccordionContent,
@@ -369,6 +370,48 @@ export const EditorNew: React.FC = () => {
     setShowMobilePreview(!showMobilePreview);
   };
 
+  const generateAndUploadCardImage = async (cardId: string) => {
+    const element = document.getElementById('card-capture-container');
+    if (!element) return null;
+
+    try {
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return null;
+
+      const fileName = `${cardId}.png`;
+
+      // Upload to Supabase
+      const { error: uploadError } = await supabase.storage
+        .from('card_images')
+        .upload(fileName, blob, {
+          upsert: true,
+          contentType: 'image/png'
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('card_images')
+        .getPublicUrl(fileName);
+
+      // Add a timestamp to bust cache
+      return `${publicUrl}?t=${new Date().getTime()}`;
+    } catch (error) {
+      console.error('Error generating card image:', error);
+      return null;
+    }
+  };
+
   const handleSave = async (silent = false) => {
     if (!user) return;
 
@@ -397,7 +440,9 @@ export const EditorNew: React.FC = () => {
         is_approved: true,
       };
 
+      let currentCardId = existing?.id;
       let error;
+
       if (existing?.id) {
         // Only include vanity_url in update if it has changed
         if (existing.vanity_url !== cardData.vanityUrl) {
@@ -410,16 +455,35 @@ export const EditorNew: React.FC = () => {
           .eq('id', existing.id));
       } else {
         // For new cards, always include vanity_url and owner_user_id
-        ({ error } = await supabase
+        const { data: newCard, error: insertError } = await supabase
           .from('digital_cards')
           .insert({
             ...payload,
             vanity_url: cardData.vanityUrl,
             owner_user_id: user.id
-          }));
+          })
+          .select()
+          .single();
+
+        error = insertError;
+        if (newCard) {
+          currentCardId = newCard.id;
+        }
       }
 
       if (error) throw error;
+
+      // Generate and upload card image if not silent (or maybe even if silent?)
+      // Let's do it only on manual save to save resources, or if it's a new card
+      if (!silent && currentCardId) {
+        const imageUrl = await generateAndUploadCardImage(currentCardId);
+        if (imageUrl) {
+          await supabase
+            .from('digital_cards')
+            .update({ card_image_url: imageUrl } as any)
+            .eq('id', currentCardId);
+        }
+      }
 
       if (!silent) {
         toast({
@@ -498,6 +562,27 @@ export const EditorNew: React.FC = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Hidden container for card image generation */}
+      <div
+        id="card-capture-container"
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: 0,
+          width: '400px',
+          zIndex: -1
+        }}
+      >
+        <div className={`p-4 ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
+          cardData.theme === 'vibrant' ? 'bg-gradient-to-br from-purple-400 to-pink-600' :
+            cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
+              cardData.theme === 'minimal' ? 'bg-background' :
+                'bg-background'
+          }`}>
+          <CardPreviewNew cardData={{ ...cardData, aiEnabled }} showAIButton={true} />
+        </div>
+      </div>
+
       {/* Video Intro Dialog */}
       {showVideoIntro && <VideoIntro onClose={() => {
         setShowVideoIntro(false);
@@ -575,28 +660,57 @@ export const EditorNew: React.FC = () => {
         `}>
           {/* Mobile Navigation Tabs */}
           {isMobile && (
-            <div className="flex overflow-x-auto border-b border-border bg-muted/10 scrollbar-none">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeSection === item.id;
-                return (
+            <>
+              <div className="flex overflow-x-auto border-b border-border bg-muted/10 scrollbar-none">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveSection(item.id);
+                        setSearchParams({ tab: item.id });
+                      }}
+                      className={`flex flex-col items-center justify-center min-w-[4.5rem] py-3 px-1 gap-1 transition-colors border-b-2 ${isActive
+                        ? 'border-primary text-primary bg-background'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'
+                        }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile Quick Actions */}
+              {cardData.vanityUrl && (
+                <div className="flex items-center gap-2 p-2 border-b border-border bg-muted/5">
                   <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveSection(item.id);
-                      setSearchParams({ tab: item.id });
-                    }}
-                    className={`flex flex-col items-center justify-center min-w-[4.5rem] py-3 px-1 gap-1 transition-colors border-b-2 ${isActive
-                      ? 'border-primary text-primary bg-background'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'
-                      }`}
+                    onClick={() => window.open(`/${cardData.vanityUrl}?card`, '_blank')}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                    <CreditCard className="w-4 h-4" />
+                    Card
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    onClick={() => window.open('/analytics', '_blank')}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Analytics
+                  </button>
+                  <button
+                    onClick={() => window.open(`/${cardData.vanityUrl}`, '_blank')}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Profile
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <div className="flex flex-1 overflow-hidden">

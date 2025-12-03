@@ -32,6 +32,12 @@ import { parseMarkdown } from '@/lib/markdown';
 const defaultSections = [
   'introduction',
   'quick-start',
+  'dashboard',
+  'analytics',
+  'editor',
+  'settings',
+  'public-profile',
+  'api',
   'why-patra',
   'avatar',
   'username',
@@ -183,6 +189,179 @@ export const DocsNew: React.FC = () => {
                 </Card>
               ))}
             </div>
+          </div>
+        );
+
+      case 'dashboard':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">Dashboard</h1>
+              <p className="text-lg text-muted-foreground">
+                Your central command center
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="mb-4">
+                  The Dashboard (<code>/dashboard</code>) provides an overview of your digital presence. Here you can see recent activity, quick stats, and access common actions.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'analytics':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">Analytics</h1>
+              <p className="text-lg text-muted-foreground">
+                Track your performance
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="mb-4">
+                  The Analytics page (<code>/analytics</code>) offers deep insights into how your card is performing.
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                  <li><strong>Views:</strong> Total number of times your profile has been viewed.</li>
+                  <li><strong>Unique Visitors:</strong> Number of distinct people who visited your profile.</li>
+                  <li><strong>Click-through Rate:</strong> Percentage of visitors who clicked on your links.</li>
+                  <li><strong>Device Breakdown:</strong> See if your visitors are using Mobile or Desktop.</li>
+                  <li><strong>Location Data:</strong> Understand where your audience is located.</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'editor':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">Profile Editor</h1>
+              <p className="text-lg text-muted-foreground">
+                Customize every aspect of your digital card
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="mb-4">
+                  The Editor (<code>/editor</code>) is where you build your profile. Each section has its own direct URL for quick access:
+                </p>
+                <div className="grid gap-3">
+                  {[
+                    { label: 'Avatar', url: '/editor?tab=avatar', desc: 'Upload your profile picture' },
+                    { label: 'About', url: '/editor?tab=about', desc: 'Add your bio and personal details' },
+                    { label: 'Location', url: '/editor?tab=location', desc: 'Set your physical location' },
+                    { label: 'Social Accounts', url: '/editor?tab=verified', desc: 'Connect your social media profiles' },
+                    { label: 'Wallet', url: '/editor?tab=wallet', desc: 'Add payment links and UPI' },
+                    { label: 'Links', url: '/editor?tab=links', desc: 'Add custom links and groups' },
+                    { label: 'Interests', url: '/editor?tab=interests', desc: 'Share your hobbies and interests' },
+                    { label: 'Achievements', url: '/editor?tab=achievements', desc: 'Showcase your awards and certifications' },
+                    { label: 'Testimonials', url: '/editor?tab=testimonials', desc: 'Display reviews and recommendations' },
+                    { label: 'Gallery', url: '/editor?tab=gallery', desc: 'Upload photos to your gallery' },
+                    { label: 'Design', url: '/editor?tab=design', desc: 'Choose themes and colors' },
+                    { label: 'Card Layout', url: '/editor?tab=cardlayout', desc: 'Reorder or hide sections' },
+                    { label: 'AI Profile', url: '/editor?tab=aiprofile', desc: 'Configure your AI assistant' }
+                  ].map((tab) => (
+                    <div key={tab.label} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div>
+                        <div className="font-semibold">{tab.label}</div>
+                        <div className="text-sm text-muted-foreground">{tab.desc}</div>
+                      </div>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">{tab.url}</code>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'settings':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">Settings</h1>
+              <p className="text-lg text-muted-foreground">
+                Manage your account and preferences
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="mb-4">
+                  Access your account settings at <code>/settings</code>. Here you can:
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                  <li>Update your email and password</li>
+                  <li>Manage your subscription</li>
+                  <li>Configure notification preferences</li>
+                  <li>View billing history</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'public-profile':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">Public Profile</h1>
+              <p className="text-lg text-muted-foreground">
+                Your digital identity shared with the world
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Profile View</h3>
+                    <code className="block bg-muted p-3 rounded-lg mb-2">/:username</code>
+                    <p className="text-sm text-muted-foreground">
+                      This is your main profile page (e.g., <code>patra.me/john</code>). It displays your full profile, including all sections like About, Links, Gallery, and more.
+                    </p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Card View</h3>
+                    <code className="block bg-muted p-3 rounded-lg mb-2">/:username?card</code>
+                    <p className="text-sm text-muted-foreground">
+                      A simplified, 3D-style digital card view. This is perfect for quick sharing and serves as the visual representation of your physical card.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'api':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
+              <p className="text-lg text-muted-foreground">
+                Build with Patra
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="mb-6">
+                  Developers can integrate with Patra using our comprehensive API. Access profile data, generate cards programmatically, and more.
+                </p>
+                <a
+                  href="/api-docs"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                  View API Documentation
+                  <Globe className="ml-2 h-4 w-4" />
+                </a>
+              </CardContent>
+            </Card>
           </div>
         );
 

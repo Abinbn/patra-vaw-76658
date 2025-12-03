@@ -7,7 +7,7 @@ import NotFound from './NotFound';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Share2, CreditCard, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { updateOGMetaTags, getCardImageUrl, generateShareText, shareProfile } from '@/lib/og-utils';
+import { updateOGMetaTags, generateShareText, shareProfile } from '@/lib/og-utils';
 import { AddressMapDisplay } from '@/components/AddressMapDisplay';
 import { downloadVCard } from '@/lib/vcard-utils';
 
@@ -60,6 +60,7 @@ interface CardData {
   showAddressMap?: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  cardImageUrl?: string;
 }
 
 export const PublicProfile: React.FC = () => {
@@ -71,7 +72,7 @@ export const PublicProfile: React.FC = () => {
   const [ogDescription, setOgDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  
+
   const isCardView = searchParams.get('card') !== null;
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export const PublicProfile: React.FC = () => {
       try {
         // Get current user to check if they're the owner
         const { data: { user: currentUser } } = await supabase.auth.getUser();
-        
+
         // Fetch card by vanity_url with profile info
         const { data: card, error } = await supabase
           .from('digital_cards')
@@ -120,7 +121,7 @@ export const PublicProfile: React.FC = () => {
         setOgDescription(card.og_description);
 
         // Generate OG description if it doesn't exist or is older than 30 days
-        const needsNewDescription = !card.og_description || 
+        const needsNewDescription = !card.og_description ||
           !card.og_description_generated_at ||
           (new Date().getTime() - new Date(card.og_description_generated_at).getTime()) > 30 * 24 * 60 * 60 * 1000;
 
@@ -138,7 +139,7 @@ export const PublicProfile: React.FC = () => {
         // Parse content_json
         const content = card.content_json as any;
         const profile = Array.isArray(card.profiles) ? card.profiles[0] : card.profiles;
-        
+
         // Parse location coordinates if available
         let lat = null;
         let lng = null;
@@ -149,7 +150,7 @@ export const PublicProfile: React.FC = () => {
             lng = parseFloat(coords[1].trim());
           }
         }
-        
+
         setCardData({
           fullName: content.fullName || card.title || '',
           about: content.about || '',
@@ -198,6 +199,8 @@ export const PublicProfile: React.FC = () => {
           showAddressMap: profile?.show_address_map || false,
           latitude: lat,
           longitude: lng,
+          // Store the card image URL in the card data for OG use
+          cardImageUrl: (card as any).card_image_url,
         });
 
         // Track analytics with device and IP info
@@ -222,9 +225,10 @@ export const PublicProfile: React.FC = () => {
   // Update Open Graph meta tags when card data is loaded
   useEffect(() => {
     if (cardData && username) {
-      const cardImageUrl = getCardImageUrl(username);
+      // Use the generated card image if available, otherwise fallback to avatar
+      const cardImageUrl = cardData.cardImageUrl || cardData.avatarUrl;
       const pageUrl = window.location.href;
-      
+
       updateOGMetaTags({
         title: `${cardData.fullName}${cardData.jobTitle ? ` - ${cardData.jobTitle}` : ''} | Patra`,
         description: ogDescription || `Check out ${cardData.fullName}'s digital business card on Patra`,
@@ -300,18 +304,17 @@ export const PublicProfile: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen ${
-      cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
+    <div className={`min-h-screen ${cardData.theme === 'modern' ? 'bg-gradient-to-br from-gray-900 to-gray-800' :
       cardData.theme === 'vibrant' ? 'bg-gradient-to-br from-purple-400 to-pink-600' :
-      cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
-      cardData.theme === 'minimal' ? 'bg-background' :
-      'bg-background'
-    }`}>
+        cardData.theme === 'professional' ? 'bg-gradient-to-br from-slate-100 to-gray-200' :
+          cardData.theme === 'minimal' ? 'bg-background' :
+            'bg-background'
+      }`}>
       {/* Custom CSS Injection */}
       {cardData.customCSS && (
         <style dangerouslySetInnerHTML={{ __html: cardData.customCSS }} />
       )}
-      
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b overflow-x-auto">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between min-w-max">

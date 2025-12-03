@@ -30,14 +30,14 @@ export const updateOGMetaTags = (config: MetaTagConfig) => {
   metaTags.forEach(({ property, name, content }) => {
     const selector = property ? `meta[property="${property}"]` : `meta[name="${name}"]`;
     let meta = document.querySelector(selector) as HTMLMetaElement;
-    
+
     if (!meta) {
       meta = document.createElement('meta');
       if (property) meta.setAttribute('property', property);
       if (name) meta.setAttribute('name', name);
       document.head.appendChild(meta);
     }
-    
+
     meta.content = content;
   });
 
@@ -45,13 +45,7 @@ export const updateOGMetaTags = (config: MetaTagConfig) => {
   document.title = config.title;
 };
 
-/**
- * Generates a card image URL for Open Graph
- */
-export const getCardImageUrl = (username: string): string => {
-  const baseUrl = window.location.origin;
-  return `${baseUrl}/${username}?card`;
-};
+
 
 /**
  * Generates share text for social media
@@ -64,7 +58,7 @@ export const generateShareText = (
   if (ogDescription) {
     return `${ogDescription}\n\n${url}`;
   }
-  
+
   // Fallback share text
   return `Hey! Check out ${fullName}'s Patra digital business card! 🚀\n\nThis card helped boost profile views and connections.\n\n${url}\n\nGet your own at Patra.me ✨`;
 };
@@ -89,7 +83,7 @@ export const shareProfile = async (
       }
     }
   }
-  
+
   // Fallback to clipboard
   try {
     await navigator.clipboard.writeText(`${text}`);
@@ -106,7 +100,7 @@ export const shareProfile = async (
 export const getSocialShareUrls = (text: string, url: string) => {
   const encodedText = encodeURIComponent(text);
   const encodedUrl = encodeURIComponent(url);
-  
+
   return {
     twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,

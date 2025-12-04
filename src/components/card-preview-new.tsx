@@ -261,7 +261,7 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
         ></div>
 
         <div className="px-6 pb-6">
-          {/* Avatar overlapping header - with QR flip */}
+          {/* Avatar overlapping header - with Profile URL flip */}
           <div className="-mt-16 mb-4">
             <div
               className="relative w-28 h-28 cursor-pointer perspective-1000"
@@ -275,10 +275,13 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
                     {displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {/* Back - QR Code */}
-                <div className="absolute w-full h-full border-4 border-card shadow-lg rounded-full bg-white flex items-center justify-center backface-hidden rotate-y-180 p-2">
-                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                    <span className="text-xs text-center">QR</span>
+                {/* Back - Profile URL */}
+                <div className="absolute w-full h-full border-4 border-card shadow-lg rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center backface-hidden rotate-y-180 p-3">
+                  <div className="w-full h-full rounded-full flex flex-col items-center justify-center text-center">
+                    <Globe className="w-6 h-6 text-primary mb-1" />
+                    <span className="text-[9px] font-mono font-semibold text-foreground leading-tight break-all px-1">
+                      patra.me/{cardData.vanityUrl || 'url'}
+                    </span>
                   </div>
                 </div>
               </div>

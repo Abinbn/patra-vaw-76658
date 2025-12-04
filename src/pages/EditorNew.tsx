@@ -46,7 +46,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { CardPreviewNew } from '@/components/card-preview-new';
-import { FlippableBusinessCard } from '@/components/FlippableBusinessCard';
+import { BusinessCard3D } from '@/components/BusinessCard3D';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { VideoIntro } from '@/components/VideoIntro';
 import { ProfileInfoEditor } from '@/components/editor/ProfileInfoEditor';
@@ -877,20 +877,22 @@ export const EditorNew: React.FC = () => {
               }`}
             style={{ height: '100%' }}
           >
-            <div className="max-w-md mx-auto space-y-6">
+            <div className="max-w-md mx-auto space-y-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm font-medium text-muted-foreground">Live Preview</div>
               </div>
 
-              {/* Flippable Business Card */}
-              <FlippableBusinessCard cardData={cardData} />
+              {/* 3D Business Card */}
+              <div className="mb-8">
+                <BusinessCard3D cardData={cardData} scale={0.85} showControls={true} />
+              </div>
 
               {/* Profile Preview */}
               <CardPreviewNew cardData={{ ...cardData, aiEnabled }} onOpenPayment={() => setShowPaymentDialog(true)} showAIButton={true} />
 
               {/* Profile URL Input at Bottom */}
               {cardData.vanityUrl && (
-                <div className="mt-6 pt-6 border-t border-border/50">
+                <div className="mt-8 pt-6 border-t border-border/50">
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">
                     Profile URL
                   </label>
@@ -938,16 +940,18 @@ export const EditorNew: React.FC = () => {
                 cardData.theme === 'minimal' ? 'bg-background' :
                   'bg-background'
             }`}>
-            <div className="space-y-6">
-              {/* Flippable Business Card */}
-              <FlippableBusinessCard cardData={cardData} />
+            <div className="space-y-8">
+              {/* 3D Business Card */}
+              <div className="mb-8">
+                <BusinessCard3D cardData={cardData} scale={0.85} showControls={true} />
+              </div>
 
               {/* Profile Preview */}
               <CardPreviewNew cardData={{ ...cardData, aiEnabled }} onOpenPayment={() => setShowPaymentDialog(true)} showAIButton={true} />
 
               {/* Profile URL Input at Bottom */}
               {cardData.vanityUrl && (
-                <div className="mt-6 pt-6 border-t border-border/50">
+                <div className="mt-8 pt-6 border-t border-border/50">
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">
                     Profile URL
                   </label>

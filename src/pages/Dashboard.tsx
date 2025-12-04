@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Plus,
@@ -16,18 +15,17 @@ import {
   Home,
   User,
   Zap,
-  Activity,
   Search,
   Bell,
   ChevronRight,
   MoreVertical,
   Copy,
-  Check
+  Check,
+  QrCode
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -37,6 +35,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+// New Components
+import { QuickAccessPanel } from '@/components/dashboard/QuickAccessPanel';
+import { EnhancedStats } from '@/components/dashboard/EnhancedStats';
+import { SavedProfilesOverview } from '@/components/dashboard/SavedProfilesOverview';
 
 interface Profile {
   id: string;
@@ -56,18 +59,18 @@ interface DigitalCard {
   content_json?: any;
 }
 
-// Mock data for charts
+// Mock data for charts (updated for EnhancedStats)
 const viewData = [
-  { name: 'Mon', views: 40 },
-  { name: 'Tue', views: 30 },
-  { name: 'Wed', views: 20 },
-  { name: 'Thu', views: 27 },
-  { name: 'Fri', views: 18 },
-  { name: 'Sat', views: 23 },
-  { name: 'Sun', views: 34 },
+  { name: 'Mon', value: 40 },
+  { name: 'Tue', value: 30 },
+  { name: 'Wed', value: 20 },
+  { name: 'Thu', value: 27 },
+  { name: 'Fri', value: 18 },
+  { name: 'Sat', value: 23 },
+  { name: 'Sun', value: 34 },
 ];
 
-const interactionData = [
+const activityData = [
   { name: 'Mon', value: 10 },
   { name: 'Tue', value: 15 },
   { name: 'Wed', value: 8 },
@@ -161,6 +164,29 @@ export const Dashboard: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Handlers for Quick Access Panel
+  const handleShare = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Card sharing feature will be available in the next update!",
+    });
+  };
+
+  const handleScan = () => {
+    toast({
+      title: "Coming Soon",
+      description: "QR scanning feature will be available in the next update!",
+    });
+  };
+
+  const handleCreate = () => {
+    navigate('/editor');
+  };
+
+  const handleAnalytics = () => {
+    navigate('/analytics');
+  };
+
   const filteredCards = cards.filter(card =>
     card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     card.vanity_url?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -178,8 +204,8 @@ export const Dashboard: React.FC = () => {
     <button
       onClick={() => onClick ? onClick() : setActiveTab(id)}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === id
-          ? 'bg-primary/10 text-primary font-medium'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        ? 'bg-primary/10 text-primary font-medium'
+        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         }`}
     >
       <Icon className="w-5 h-5" />
@@ -303,129 +329,36 @@ export const Dashboard: React.FC = () => {
                   Here's what's happening with your digital cards today.
                 </p>
               </div>
-              <Button onClick={() => navigate('/editor')} className="gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
-                <Plus className="w-4 h-4" />
-                Create New Card
-              </Button>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Total Views</p>
-                        <h3 className="text-2xl font-bold mt-1">1,234</h3>
-                      </div>
-                      <div className="p-2 bg-blue-500/10 rounded-lg">
-                        <Eye className="w-4 h-4 text-blue-500" />
-                      </div>
-                    </div>
-                    <div className="h-[60px] -mx-6 -mb-6">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={viewData}>
-                          <defs>
-                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#colorViews)" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+            {/* Quick Access Panel */}
+            <QuickAccessPanel
+              onShare={handleShare}
+              onScan={handleScan}
+              onCreate={handleCreate}
+              onAnalytics={handleAnalytics}
+            />
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Active Cards</p>
-                        <h3 className="text-2xl font-bold mt-1">{cards.filter(c => c.is_active).length}</h3>
-                      </div>
-                      <div className="p-2 bg-green-500/10 rounded-lg">
-                        <Activity className="w-4 h-4 text-green-500" />
-                      </div>
-                    </div>
-                    <div className="h-[60px] -mx-6 -mb-6">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={interactionData}>
-                          <defs>
-                            <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <Area type="monotone" dataKey="value" stroke="#22c55e" fillOpacity={1} fill="url(#colorActive)" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+            {/* Enhanced Stats */}
+            <EnhancedStats
+              stats={{
+                totalViews: 1234,
+                activeCards: cards.filter(c => c.is_active).length,
+                savedProfiles: 24,
+                connections: 18,
+                viewsTrend: 12,
+                profilesTrend: 3
+              }}
+              viewData={viewData}
+              activityData={activityData}
+            />
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Total Cards</p>
-                        <h3 className="text-2xl font-bold mt-1">{cards.length}</h3>
-                      </div>
-                      <div className="p-2 bg-purple-500/10 rounded-lg">
-                        <CreditCard className="w-4 h-4 text-purple-500" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-green-500 mt-4">
-                      <span className="flex items-center bg-green-500/10 px-2 py-0.5 rounded text-xs font-medium">
-                        +2 new
-                      </span>
-                      <span className="text-muted-foreground text-xs">this month</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary to-purple-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-white/80">Pro Status</p>
-                        <h3 className="text-2xl font-bold mt-1">Free Plan</h3>
-                      </div>
-                      <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                        <Zap className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    <Button variant="secondary" size="sm" className="w-full mt-2 bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm">
-                      Upgrade to Pro
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
+            {/* Saved Profiles Overview */}
+            <SavedProfilesOverview
+              totalSaved={24}
+              newThisWeek={3}
+              onViewAll={() => toast({ title: "Coming Soon", description: "Profile collection view coming soon!" })}
+            />
 
             {/* Recent Cards Section */}
             <div>
@@ -526,7 +459,7 @@ export const Dashboard: React.FC = () => {
                           <div className="p-3 bg-muted/30 rounded-lg mb-4 flex items-center justify-between group-hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-2 overflow-hidden">
                               <div className="w-8 h-8 rounded bg-white flex items-center justify-center text-xs font-bold border">
-                                QR
+                                <QrCode className="w-4 h-4" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium truncate">patra.me/{card.vanity_url}</p>

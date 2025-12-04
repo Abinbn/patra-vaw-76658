@@ -40,6 +40,7 @@ import {
 import { QuickAccessPanel } from '@/components/dashboard/QuickAccessPanel';
 import { EnhancedStats } from '@/components/dashboard/EnhancedStats';
 import { SavedProfilesOverview } from '@/components/dashboard/SavedProfilesOverview';
+import { CardDropModal } from '@/components/dashboard/CardDropModal';
 
 interface Profile {
   id: string;
@@ -47,6 +48,7 @@ interface Profile {
   job_title: string;
   role: string;
   avatar_url?: string;
+  username?: string;
 }
 
 interface DigitalCard {
@@ -89,6 +91,10 @@ export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Card Drop State
+  const [isCardDropOpen, setIsCardDropOpen] = useState(false);
+  const [cardDropMode, setCardDropMode] = useState<'send' | 'receive'>('send');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -166,17 +172,13 @@ export const Dashboard: React.FC = () => {
 
   // Handlers for Quick Access Panel
   const handleShare = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Card sharing feature will be available in the next update!",
-    });
+    setCardDropMode('send');
+    setIsCardDropOpen(true);
   };
 
   const handleScan = () => {
-    toast({
-      title: "Coming Soon",
-      description: "QR scanning feature will be available in the next update!",
-    });
+    setCardDropMode('receive');
+    setIsCardDropOpen(true);
   };
 
   const handleCreate = () => {
@@ -204,8 +206,8 @@ export const Dashboard: React.FC = () => {
     <button
       onClick={() => onClick ? onClick() : setActiveTab(id)}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === id
-        ? 'bg-primary/10 text-primary font-medium'
-        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          ? 'bg-primary/10 text-primary font-medium'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         }`}
     >
       <Icon className="w-5 h-5" />
@@ -332,7 +334,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Quick Access Panel */}
-            <QuickAccessPanel
+            <QuickAccessPanel 
               onShare={handleShare}
               onScan={handleScan}
               onCreate={handleCreate}
@@ -340,7 +342,7 @@ export const Dashboard: React.FC = () => {
             />
 
             {/* Enhanced Stats */}
-            <EnhancedStats
+            <EnhancedStats 
               stats={{
                 totalViews: 1234,
                 activeCards: cards.filter(c => c.is_active).length,
@@ -354,7 +356,7 @@ export const Dashboard: React.FC = () => {
             />
 
             {/* Saved Profiles Overview */}
-            <SavedProfilesOverview
+            <SavedProfilesOverview 
               totalSaved={24}
               newThisWeek={3}
               onViewAll={() => toast({ title: "Coming Soon", description: "Profile collection view coming soon!" })}
@@ -493,6 +495,15 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Card Drop Modal */}
+      <CardDropModal
+        isOpen={isCardDropOpen}
+        onClose={() => setIsCardDropOpen(false)}
+        initialMode={cardDropMode}
+        cards={cards}
+        userProfile={profile}
+      />
     </div>
   );
 };

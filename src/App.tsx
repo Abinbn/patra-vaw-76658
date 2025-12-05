@@ -31,6 +31,7 @@ import { Feedback } from "./pages/Feedback";
 import { ProfileCollection } from "./pages/ProfileCollection";
 import { ProfileView } from "./pages/ProfileView";
 import { AccessManagement } from "./pages/AccessManagement";
+import { EmbedCard } from "./pages/EmbedCard";
 // import PrintCard from "./pages/Printcard";
 
 const queryClient = new QueryClient();
@@ -175,6 +176,7 @@ const App = () => (
             />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/embed/:username" element={<EmbedCard />} />
             <Route path="/:username/ai" element={<AIChat />} />
             <Route path="/:username" element={<PublicProfile />} />
             <Route path="*" element={<NotFound />} />

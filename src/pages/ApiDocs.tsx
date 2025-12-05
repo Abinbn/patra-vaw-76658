@@ -464,7 +464,7 @@ export const ApiDocs: React.FC = () => {
                     <Label>Generated Code</Label>
                     <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm relative group">
                       <pre className="whitespace-pre-wrap break-all">
-                        {`<iframe src="https://patra.app/${embedUsername || 'USERNAME'}?card&embed=true" 
+                        {`<iframe src="https://patra.app/embed/${embedUsername || 'USERNAME'}" 
   width="400" 
   height="250" 
   frameborder="0" 
@@ -477,7 +477,7 @@ export const ApiDocs: React.FC = () => {
                         variant="ghost"
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => handleCopy(
-                          `<iframe src="https://patra.app/${embedUsername || 'USERNAME'}?card&embed=true" width="400" height="250" frameborder="0" scrolling="no" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`,
+                          `<iframe src="https://patra.app/embed/${embedUsername || 'USERNAME'}" width="400" height="250" frameborder="0" scrolling="no" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`,
                           'embed-code'
                         )}
                       >

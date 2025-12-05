@@ -162,30 +162,48 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
         }
 
         try {
-            // Parse the scanned code to extract username or vanity URL
+            // Parse the scanned code to extract vanity URL
             // Expected formats:
-            // - https://patra.app/username
-            // - https://patra.app/u/username
-            // - username (direct input)
+            // - https://patra.app/vanity_url
+            // - @vanity_url (with @ prefix)
+            // - vanity_url (direct input)
             let identifier = code.trim();
 
-            // Extract username from URL if it's a full URL
-            if (identifier.includes('patra.app/')) {
-                const urlParts = identifier.split('patra.app/');
-                identifier = urlParts[1]?.split('?')[0]?.replace('u/', '') || identifier;
+            // Remove @ prefix if present
+            if (identifier.startsWith('@')) {
+                identifier = identifier.substring(1);
             }
 
-            // Fetch the profile from Supabase
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('id, user_id, username, display_name, job_title, avatar_url')
-                .eq('username', identifier)
-                .single();
+            // Extract vanity URL from full URL if needed
+            if (identifier.includes('patra.app/')) {
+                const urlParts = identifier.split('patra.app/');
+                identifier = urlParts[1]?.split('?')[0] || identifier;
+            }
 
-            if (profileError || !profileData) {
+            // Fetch the card and its owner's profile from Supabase
+            const { data: cardData, error: cardError } = await supabase
+                .from('digital_cards')
+                .select(`
+                    id,
+                    vanity_url,
+                    title,
+                    owner_user_id,
+                    profiles!digital_cards_owner_user_id_fkey (
+                        id,
+                        user_id,
+                        display_name,
+                        job_title,
+                        avatar_url
+                    )
+                `)
+                .eq('vanity_url', identifier)
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (cardError || !cardData || !cardData.profiles) {
                 toast({
-                    title: "Profile Not Found",
-                    description: "Could not find a profile with that username. Please check and try again.",
+                    title: "Card Not Found",
+                    description: "Could not find an active card with that URL. Please check and try again.",
                     variant: "destructive"
                 });
                 setTimeout(() => {
@@ -196,18 +214,20 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
                 return;
             }
 
+            const profileData = Array.isArray(cardData.profiles) ? cardData.profiles[0] : cardData.profiles;
+
             // Check if already saved
             const { data: existingSave } = await supabase
                 .from('saved_profiles')
                 .select('id')
                 .eq('user_id', userProfile.user_id)
                 .eq('saved_user_id', profileData.user_id)
-                .single();
+                .maybeSingle();
 
             if (existingSave) {
                 toast({
                     title: "Already Saved",
-                    description: `You already have ${profileData.display_name} in your saved profiles.`,
+                    description: `You already have ${profileData.display_name}'s card in your connections.`,
                 });
                 setTimeout(() => {
                     if (mode === 'receive' && !scannedData) {
@@ -218,17 +238,18 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
             }
 
             setScannedData({
-                username: profileData.username,
-                displayName: profileData.display_name,
+                username: cardData.vanity_url,
+                displayName: profileData.display_name || 'User',
                 jobTitle: profileData.job_title || 'Professional',
                 avatarUrl: profileData.avatar_url,
-                userId: profileData.user_id
+                userId: profileData.user_id,
+                cardId: cardData.id
             });
         } catch (error: any) {
             console.error('Error fetching profile:', error);
             toast({
                 title: "Error",
-                description: "Failed to load profile. Please try again.",
+                description: "Failed to load card. Please try again.",
                 variant: "destructive"
             });
             setTimeout(() => {
@@ -427,7 +448,7 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
                                     <div className="pt-2">
                                         <form onSubmit={handleManualSubmit} className="flex gap-2">
                                             <Input
-                                                placeholder="Enter username or code manually"
+                                                placeholder="Enter card URL (e.g., @abc123 or abc123)"
                                                 value={manualEntry}
                                                 onChange={(e) => setManualEntry(e.target.value)}
                                                 className="bg-muted/50"

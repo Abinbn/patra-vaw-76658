@@ -1,335 +1,288 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-    Shield,
-    Users,
-    UserMinus,
-    Search,
-    ArrowLeft,
-    Clock,
-    CheckCircle2,
-    AlertCircle,
-    Filter
-} from 'lucide-react';
+import { Shield, ArrowLeft, Search, Loader2, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Mock Data for "Shared With" (People who have your card)
-const MOCK_SHARED_WITH = [
-    {
-        id: '1',
-        name: 'Alice Freeman',
-        role: 'Marketing Director',
-        company: 'Growth Co.',
-        avatar: 'https://i.pravatar.cc/150?u=alice',
-        connectedAt: '2023-11-10T14:30:00Z',
-        status: 'active',
-        accessLevel: 'full'
-    },
-    {
-        id: '2',
-        name: 'Bob Smith',
-        role: 'Freelance Designer',
-        company: 'Self Employed',
-        avatar: 'https://i.pravatar.cc/150?u=bob',
-        connectedAt: '2023-11-12T09:15:00Z',
-        status: 'active',
-        accessLevel: 'limited'
-    },
-    {
-        id: '3',
-        name: 'Charlie Davis',
-        role: 'Recruiter',
-        company: 'Tech Talent',
-        avatar: 'https://i.pravatar.cc/150?u=charlie',
-        connectedAt: '2023-10-05T16:45:00Z',
-        status: 'revoked',
-        accessLevel: 'none'
-    }
-];
-
-// Mock Data for "My Connections" (People whose cards I have)
-const MOCK_MY_CONNECTIONS = [
-    {
-        id: '101',
-        name: 'David Wilson',
-        role: 'CTO',
-        company: 'Innovate Inc.',
-        avatar: 'https://i.pravatar.cc/150?u=david',
-        savedAt: '2023-11-15T10:00:00Z',
-        notes: 'Met at Tech Summit'
-    },
-    {
-        id: '102',
-        name: 'Eva Green',
-        role: 'Product Manager',
-        company: 'Creative Solutions',
-        avatar: 'https://i.pravatar.cc/150?u=eva',
-        savedAt: '2023-11-18T11:20:00Z',
-        notes: ''
-    }
-];
+interface SavedConnection {
+  id: string;
+  saved_user_id: string;
+  saved_at: string;
+  card_id: string;
+  card_title: string;
+  card_vanity_url: string;
+  card_content: any;
+  owner_name: string;
+  owner_job_title: string;
+  owner_avatar: string;
+}
 
 export const AccessManagement: React.FC = () => {
-    const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('shared-with');
-    const [sharedWith, setSharedWith] = useState(MOCK_SHARED_WITH);
-    const [myConnections, setMyConnections] = useState(MOCK_MY_CONNECTIONS);
-    const [userToRevoke, setUserToRevoke] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [connections, setConnections] = useState<SavedConnection[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const handleRevokeAccess = (userId: string) => {
-        // In a real app, API call to revoke access
-        setSharedWith(prev => prev.map(user =>
-            user.id === userId ? { ...user, status: 'revoked', accessLevel: 'none' } : user
-        ));
+  useEffect(() => {
+    if (user) {
+      fetchConnections();
+    }
+  }, [user]);
 
-        toast({
-            title: "Access Revoked",
-            description: "This user can no longer view your updated details.",
-            variant: "destructive"
-        });
-        setUserToRevoke(null);
-    };
+  const fetchConnections = async () => {
+    if (!user) return;
 
-    const handleRemoveConnection = (connectionId: string) => {
-        // In a real app, API call to remove saved profile
-        setMyConnections(prev => prev.filter(c => c.id !== connectionId));
-        toast({
-            title: "Connection Removed",
-            description: "Profile removed from your saved collection.",
-        });
-    };
+    try {
+      // Fetch saved profiles - using simple query without complex joins
+      const { data: savedProfiles, error: savedError } = await supabase
+        .from('saved_profiles')
+        .select('id, saved_user_id, saved_at')
+        .eq('user_id', user.id)
+        .order('saved_at', { ascending: false });
 
-    const filteredSharedWith = sharedWith.filter(user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.company.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+      if (savedError) throw savedError;
 
-    const filteredConnections = myConnections.filter(conn =>
-        conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conn.company.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+      if (!savedProfiles || savedProfiles.length === 0) {
+        setConnections([]);
+        return;
+      }
 
+      // Fetch profile data for all saved users
+      const savedUserIds = savedProfiles.map(sp => sp.saved_user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, job_title, avatar_url')
+        .in('user_id', savedUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map for quick profile lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
+      );
+
+      // For each saved profile, fetch their active card
+      const connectionsWithCards = await Promise.all(
+        savedProfiles.map(async (profile) => {
+          const profileData = profilesMap.get(profile.saved_user_id);
+          
+          if (!profileData) return null;
+
+          const { data: card } = await supabase
+            .from('digital_cards')
+            .select('id, title, vanity_url, content_json')
+            .eq('owner_user_id', profileData.user_id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!card) return null;
+
+          return {
+            id: profile.id,
+            saved_user_id: profile.saved_user_id,
+            saved_at: profile.saved_at,
+            card_id: card.id,
+            card_title: card.title,
+            card_vanity_url: card.vanity_url,
+            card_content: card.content_json,
+            owner_name: profileData.display_name || 'User',
+            owner_job_title: profileData.job_title || '',
+            owner_avatar: profileData.avatar_url || ''
+          };
+        })
+      );
+
+      setConnections(connectionsWithCards.filter(Boolean) as SavedConnection[]);
+    } catch (error: any) {
+      console.error('Error fetching connections:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load connections",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveConnection = async (connectionId: string, ownerName: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_profiles')
+        .delete()
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      setConnections(prev => prev.filter(c => c.id !== connectionId));
+      toast({
+        title: "Connection Removed",
+        description: `${ownerName}'s card has been removed from your connections.`,
+      });
+    } catch (error: any) {
+      console.error('Error removing connection:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove connection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredConnections = connections.filter(conn =>
+    conn.owner_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conn.card_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conn.card_vanity_url.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
     return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="rounded-full hover:bg-muted">
-                                <ArrowLeft className="w-5 h-5" />
-                            </Button>
-                            <div>
-                                <h1 className="text-2xl font-bold flex items-center gap-2">
-                                    <Shield className="w-6 h-6 text-primary" />
-                                    Access Management
-                                </h1>
-                                <p className="text-sm text-muted-foreground hidden md:block">
-                                    Control who can view your digital card details
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main className="container mx-auto px-4 py-8 max-w-5xl">
-                <Tabs defaultValue="shared-with" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                        <TabsList className="grid w-full md:w-auto grid-cols-2">
-                            <TabsTrigger value="shared-with" className="gap-2">
-                                <Users className="w-4 h-4" /> Shared With Me
-                            </TabsTrigger>
-                            <TabsTrigger value="my-connections" className="gap-2">
-                                <CheckCircle2 className="w-4 h-4" /> My Connections
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <div className="relative w-full md:w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search people or companies..."
-                                className="pl-10"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Tab: Shared With (People who have my card) */}
-                    <TabsContent value="shared-with" className="space-y-4">
-                        <div className="grid gap-4">
-                            {filteredSharedWith.length === 0 ? (
-                                <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">
-                                    <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3 opacity-50" />
-                                    <h3 className="text-lg font-medium">No active shares found</h3>
-                                    <p className="text-muted-foreground">People who scan your QR code will appear here.</p>
-                                </div>
-                            ) : (
-                                filteredSharedWith.map((user) => (
-                                    <motion.div
-                                        key={user.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        layout
-                                    >
-                                        <Card className={`border-l-4 ${user.status === 'active' ? 'border-l-green-500' : 'border-l-gray-300'} shadow-sm hover:shadow-md transition-shadow`}>
-                                            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                                                <div className="flex items-center gap-4 w-full md:w-auto">
-                                                    <Avatar className="w-12 h-12 border">
-                                                        <AvatarImage src={user.avatar} />
-                                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <h3 className="font-bold text-lg">{user.name}</h3>
-                                                            {user.status === 'active' ? (
-                                                                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Active</Badge>
-                                                            ) : (
-                                                                <Badge variant="secondary" className="bg-gray-100 text-gray-500 hover:bg-gray-100 text-xs">Revoked</Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground">{user.role} at {user.company}</p>
-                                                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                                            <Clock className="w-3 h-3" />
-                                                            <span>Connected {new Date(user.connectedAt).toLocaleDateString()}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                                                    {user.status === 'active' ? (
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive gap-2 w-full md:w-auto">
-                                                                    <UserMinus className="w-4 h-4" /> Revoke Access
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Revoke access for {user.name}?</AlertDialogTitle>
-                                                                    <AlertDialogDescription>
-                                                                        They will no longer receive updates to your digital card. They may still have a cached version of your contact info.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction
-                                                                        onClick={() => handleRevokeAccess(user.id)}
-                                                                        className="bg-destructive hover:bg-destructive/90"
-                                                                    >
-                                                                        Yes, Revoke Access
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    ) : (
-                                                        <Button variant="ghost" disabled className="gap-2 w-full md:w-auto opacity-50">
-                                                            <UserMinus className="w-4 h-4" /> Access Revoked
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                ))
-                            )}
-                        </div>
-                    </TabsContent>
-
-                    {/* Tab: My Connections (People whose cards I have) */}
-                    <TabsContent value="my-connections" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {filteredConnections.length === 0 ? (
-                                <div className="col-span-full text-center py-12 bg-muted/30 rounded-xl border border-dashed">
-                                    <Search className="w-12 h-12 mx-auto text-muted-foreground mb-3 opacity-50" />
-                                    <h3 className="text-lg font-medium">No connections found</h3>
-                                    <p className="text-muted-foreground">Profiles you save will appear here.</p>
-                                </div>
-                            ) : (
-                                filteredConnections.map((conn) => (
-                                    <motion.div
-                                        key={conn.id}
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                    >
-                                        <Card className="h-full hover:border-primary/50 transition-colors">
-                                            <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
-                                                <Avatar className="w-10 h-10">
-                                                    <AvatarImage src={conn.avatar} />
-                                                    <AvatarFallback>{conn.name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 overflow-hidden">
-                                                    <CardTitle className="text-base truncate">{conn.name}</CardTitle>
-                                                    <CardDescription className="truncate">{conn.role} @ {conn.company}</CardDescription>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-xs text-muted-foreground mb-4">
-                                                    Saved on {new Date(conn.savedAt).toLocaleDateString()}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => navigate('/dashboard/profiles')}>
-                                                        View Profile
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
-                                                                Remove
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Remove {conn.name}?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    This will remove them from your saved profiles. You can scan their QR code again to reconnect.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleRemoveConnection(conn.id)}>
-                                                                    Remove
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                ))
-                            )}
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </main>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading connections...</p>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="rounded-full hover:bg-muted">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Shield className="w-6 h-6 text-primary" />
+                  My Connections
+                </h1>
+                <p className="text-sm text-muted-foreground hidden md:block">
+                  Cards you've saved from others
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Search Bar */}
+        <div className="relative w-full max-w-md mb-8">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search connections..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Cards Grid */}
+        {filteredConnections.length === 0 ? (
+          <div className="text-center py-16 bg-muted/30 rounded-xl border border-dashed">
+            <Shield className="w-16 h-16 mx-auto text-muted-foreground mb-4 opacity-50" />
+            <h3 className="text-lg font-medium mb-2">No Connections Yet</h3>
+            <p className="text-muted-foreground mb-6">
+              Scan someone's QR code to save their card and create a connection
+            </p>
+            <Button onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredConnections.map((connection, index) => (
+              <motion.div
+                key={connection.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex flex-col"
+              >
+                {/* Digital Card Preview */}
+                <Card 
+                  className="relative overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 border-2 hover:border-primary/50"
+                  onClick={() => navigate(`/${connection.card_vanity_url}`)}
+                >
+                  <div className="aspect-[1.586/1] bg-gradient-to-br from-primary/10 via-background to-purple-500/10 p-6 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold mb-1">{connection.owner_name}</h3>
+                      {connection.owner_job_title && (
+                        <p className="text-muted-foreground">{connection.owner_job_title}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">@{connection.card_vanity_url}</p>
+                      <div className="text-xs text-muted-foreground">
+                        Saved {new Date(connection.saved_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => navigate(`/${connection.card_vanity_url}`)}
+                  >
+                    View Profile
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10">
+                        <UserMinus className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove {connection.owner_name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove their card from your connections. You can always scan their QR code again to reconnect.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleRemoveConnection(connection.id, connection.owner_name)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Remove
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
 };

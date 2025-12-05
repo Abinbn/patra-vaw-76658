@@ -166,22 +166,6 @@ const App = () => (
             /> */}
 
             <Route
-              path="/dashboard/profiles"
-              element={
-                <ProtectedRoute>
-                  <ProfileCollection />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/profiles/:username"
-              element={
-                <ProtectedRoute>
-                  <ProfileView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/dashboard/access"
               element={
                 <ProtectedRoute>

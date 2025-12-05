@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Camera, Plus, BarChart3, LucideIcon } from 'lucide-react';
+import { QrCode, Camera, Shield, BarChart3, LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -91,9 +91,9 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
         },
         {
             id: 'create',
-            title: 'Create New Card',
-            subtitle: 'Design your card',
-            icon: Plus,
+            title: 'My Connections',
+            subtitle: 'View saved profiles',
+            icon: Shield,
             gradient: 'from-purple-500 to-pink-600',
             onClick: onCreate,
         },

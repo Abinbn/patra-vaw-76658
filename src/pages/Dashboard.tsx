@@ -231,7 +231,7 @@ export const Dashboard: React.FC = () => {
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border-border/50">
                 <DropdownMenuItem onClick={() => navigate('/editor')}>
                   <Edit3 className="w-4 h-4 mr-2" /> Edit
                 </DropdownMenuItem>
@@ -283,75 +283,32 @@ export const Dashboard: React.FC = () => {
     </motion.div>
   );
 
-  const CreateCardButton = () => (
+  const AccessButton = () => (
     <motion.div
-      key="create-new"
+      key="access-connections"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}
       className="group cursor-pointer h-full"
-      onClick={() => navigate('/editor')}
+      onClick={() => navigate('/dashboard/access')}
     >
       <div className="h-full min-h-[200px] rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/5 flex flex-col items-center justify-center gap-4 transition-all duration-300">
         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-          <Plus className="w-6 h-6" />
+          <Shield className="w-6 h-6" />
         </div>
         <div className="text-center">
-          <h3 className="font-semibold text-lg">Create New Card</h3>
-          <p className="text-sm text-muted-foreground">Design a new digital card</p>
+          <h3 className="font-semibold text-lg">My Connections</h3>
+          <p className="text-sm text-muted-foreground">View saved profiles</p>
         </div>
       </div>
     </motion.div>
   );
 
   return (
-    <div className="min-h-screen bg-background flex overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <CreditCard className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                Patra
-              </h1>
-              <p className="text-xs text-muted-foreground">Dashboard</p>
-            </div>
-          </div>
-
-          <nav className="space-y-2">
-            <SidebarItem icon={Home} label="Overview" id="overview" />
-            <SidebarItem icon={CreditCard} label="My Cards" id="cards" />
-            <SidebarItem icon={BarChart3} label="Analytics" id="analytics" onClick={() => navigate('/analytics')} />
-            <SidebarItem icon={Shield} label="Access" id="access" onClick={() => navigate('/dashboard/access')} />
-            <SidebarItem icon={User} label="Profile" id="profile" onClick={() => navigate('/settings')} />
-          </nav>
-        </div>
-
-        <div className="mt-auto p-6 border-t border-border">
-          <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-xl p-4 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Pro Plan</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">Unlock all features with Pro</p>
-            <Button size="sm" className="w-full text-xs" variant="outline">Upgrade</Button>
-          </div>
-
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors w-full px-2 py-2"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
+    <div className="min-h-screen bg-background">
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex flex-col min-h-screen">
         {/* Header */}
         <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
           <div className="flex items-center gap-4 flex-1">
@@ -368,7 +325,12 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => toast({ title: "Notifications", description: "No new notifications" })}
+            >
               <Bell className="w-5 h-5 text-muted-foreground" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </Button>
@@ -386,16 +348,16 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-sm border-border/50">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <User className="w-4 h-4 mr-2" />
-                  Profile
+                  Profile & Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                <DropdownMenuItem onClick={() => navigate('/analytics')}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Analytics
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
@@ -408,7 +370,7 @@ export const Dashboard: React.FC = () => {
         </header>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+        <div className="flex-1 p-6">
           <div className="max-w-7xl mx-auto space-y-8">
 
             {/* Welcome Section */}
@@ -427,7 +389,7 @@ export const Dashboard: React.FC = () => {
             <QuickAccessPanel
               onShare={handleShare}
               onScan={handleScan}
-              onCreate={handleCreate}
+              onCreate={() => navigate('/dashboard/access')}
               onAnalytics={handleAnalytics}
             />
 
@@ -435,7 +397,7 @@ export const Dashboard: React.FC = () => {
             <SavedProfilesOverview
               totalSaved={0}
               newThisWeek={0}
-              onViewAll={() => navigate('/dashboard/profiles')}
+              onViewAll={() => navigate('/dashboard/access')}
             />
 
             {/* Recent Cards Section */}
@@ -449,14 +411,14 @@ export const Dashboard: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCards.length === 0 ? (
-                  <CreateCardButton />
+                  <AccessButton />
                 ) : (
                   <>
                     {/* First Card */}
                     {renderCardItem(filteredCards[0], 0)}
 
-                    {/* Create New Card (2nd Position) */}
-                    <CreateCardButton />
+                    {/* Access Connections (2nd Position) */}
+                    <AccessButton />
 
                     {/* Rest of Cards */}
                     {filteredCards.slice(1).map((card, index) => renderCardItem(card, index + 1))}

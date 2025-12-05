@@ -544,12 +544,6 @@ export const MyCard: React.FC = () => {
           />
         </div>
 
-        import {DigitalCard} from '@/components/card/DigitalCard';
-
-        // ... (existing imports)
-
-        // ... inside the component return ...
-
         {/* Subtle instruction hint */}
         <div className="mt-12 text-center">
           <p className="text-xs text-slate-400">
@@ -558,42 +552,36 @@ export const MyCard: React.FC = () => {
         </div>
 
         {/* Buttons below the Card - Hide in embed */}
-        {!isEmbed && (
-          <div className="flex gap-3 mt-4 justify-center">
-            <button
-              onClick={() => navigate('/editor')}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
-            >
-              <Edit className="w-4 h-4" />
-              Editor
-            </button>
+        {
+          !isEmbed && (
+            <div className="flex gap-3 mt-4 justify-center">
+              <button
+                onClick={() => navigate('/editor')}
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+              >
+                <Edit className="w-4 h-4" />
+                Editor
+              </button>
 
-            <button
-              onClick={() => navigate(`/${username}`)}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
-            >
-              <User className="w-4 h-4" />
-              Profile
-            </button>
+              <button
+                onClick={() => navigate(`/${username}`)}
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </button>
 
-            <button
-              onClick={handleShare}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
-            >
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
-          </div>
-        )}
-      </main>
-
-      @media (min-width: 1024px) {
-          .card - container {
-        width: 400px;
-      height: 250px;
-          }
+              <button
+                onClick={handleShare}
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-transform duration-150 ease-in-out"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
+            </div>
+          )
         }
-      `}</style>
+      </main >
     </div >
   );
 };

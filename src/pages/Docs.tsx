@@ -8,7 +8,7 @@ import { ArrowLeft, Code, Zap, CreditCard, HelpCircle, History, Share2, Smartpho
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 
-export default function Docs() {
+export function Docs() {
   const navigate = useNavigate();
   const [changelog, setChangelog] = useState('');
   const [loadingChangelog, setLoadingChangelog] = useState(false);

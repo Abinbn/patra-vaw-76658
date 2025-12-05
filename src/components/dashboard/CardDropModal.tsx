@@ -141,25 +141,6 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
     };
 
     const handleScannedCode = async (code: string) => {
-        // Check for self-scan
-        const isSelf =
-            code.includes(userProfile?.username) ||
-            code === userProfile?.username ||
-            cards.some(c => code.includes(c.vanity_url));
-
-        if (isSelf) {
-            toast({
-                title: "Cannot Save Own Profile",
-                description: "You can't save your profile to the folder, Check the spelling or rescan the qr code",
-                variant: "destructive"
-            });
-            setTimeout(() => {
-                if (mode === 'receive' && !scannedData) {
-                    startScanner();
-                }
-            }, 2000);
-            return;
-        }
 
         try {
             // Parse the scanned code to extract vanity URL
@@ -215,6 +196,21 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
             }
 
             const profileData = Array.isArray(cardData.profiles) ? cardData.profiles[0] : cardData.profiles;
+
+            // Check for self-scan - only check if it's the current user's own card
+            if (profileData.user_id === userProfile.user_id) {
+                toast({
+                    title: "Cannot Save Own Profile",
+                    description: "You can't save your own profile to connections.",
+                    variant: "destructive"
+                });
+                setTimeout(() => {
+                    if (mode === 'receive' && !scannedData) {
+                        startScanner();
+                    }
+                }, 2000);
+                return;
+            }
 
             // Check if already saved
             const { data: existingSave } = await supabase
@@ -272,8 +268,19 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
         setIsSaving(true);
 
         try {
-            // Save to saved_profiles table
-            const { error: saveError } = await supabase
+            // Get current user's active card for bidirectional saving
+            const { data: myCard } = await supabase
+                .from('digital_cards')
+                .select('id')
+                .eq('owner_user_id', userProfile.user_id)
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            // BIDIRECTIONAL SAVING: Both users save each other
+            // 1. Current user saves the scanned user
+            const { error: saveError1 } = await supabase
                 .from('saved_profiles')
                 .insert({
                     user_id: userProfile.user_id,
@@ -281,28 +288,59 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
                     saved_at: new Date().toISOString()
                 });
 
-            if (saveError) throw saveError;
+            if (saveError1) throw saveError1;
 
-            // Create profile_access record (bidirectional access)
-            const { error: accessError } = await supabase
+            // 2. Scanned user automatically saves the current user (bidirectional)
+            const { error: saveError2 } = await supabase
+                .from('saved_profiles')
+                .insert({
+                    user_id: scannedData.userId,
+                    saved_user_id: userProfile.user_id,
+                    saved_at: new Date().toISOString()
+                });
+
+            // Don't fail if the reverse save fails (might already exist)
+            if (saveError2) {
+                console.warn('Bidirectional save failed (might already exist):', saveError2);
+            }
+
+            // Create profile_access records (bidirectional access)
+            const { error: accessError1 } = await supabase
                 .from('profile_access')
                 .insert({
                     owner_user_id: scannedData.userId,
                     viewer_user_id: userProfile.user_id,
+                    card_id: scannedData.cardId,
                     sharing_method: 'qr_scan',
                     shared_at: new Date().toISOString()
                 });
 
-            if (accessError) {
-                console.warn('Access record creation failed:', accessError);
-                // Don't fail the whole operation if access record fails
+            if (accessError1) {
+                console.warn('Access record creation failed:', accessError1);
+            }
+
+            // Bidirectional access - other user can also view current user's card
+            if (myCard) {
+                const { error: accessError2 } = await supabase
+                    .from('profile_access')
+                    .insert({
+                        owner_user_id: userProfile.user_id,
+                        viewer_user_id: scannedData.userId,
+                        card_id: myCard.id,
+                        sharing_method: 'qr_scan',
+                        shared_at: new Date().toISOString()
+                    });
+
+                if (accessError2) {
+                    console.warn('Bidirectional access record creation failed:', accessError2);
+                }
             }
 
             setIsSaving(false);
             setSaveSuccess(true);
             toast({
-                title: "Profile Saved!",
-                description: `You have successfully connected with ${scannedData.displayName}.`,
+                title: "Connection Established!",
+                description: `You and ${scannedData.displayName} are now connected. Both of you can view each other's cards.`,
             });
         } catch (error: any) {
             console.error('Error saving profile:', error);

@@ -82,7 +82,7 @@ export const AccessManagement: React.FC = () => {
       const connectionsWithCards = await Promise.all(
         savedProfiles.map(async (profile) => {
           const profileData = profilesMap.get(profile.saved_user_id);
-          
+
           if (!profileData) return null;
 
           const { data: card } = await supabase
@@ -124,19 +124,46 @@ export const AccessManagement: React.FC = () => {
     }
   };
 
-  const handleRemoveConnection = async (connectionId: string, ownerName: string) => {
+  const handleRemoveConnection = async (connectionId: string, savedUserId: string, ownerName: string) => {
     try {
-      const { error } = await supabase
+      // BIDIRECTIONAL REMOVAL: Remove both directions of the connection
+      // 1. Remove current user's save of the other user
+      const { error: deleteError1 } = await supabase
         .from('saved_profiles')
         .delete()
         .eq('id', connectionId);
 
-      if (error) throw error;
+      if (deleteError1) throw deleteError1;
+
+      // 2. Remove the other user's save of current user (bidirectional)
+      const { error: deleteError2 } = await supabase
+        .from('saved_profiles')
+        .delete()
+        .eq('user_id', savedUserId)
+        .eq('saved_user_id', user.id);
+
+      // Don't fail if reverse delete fails (might not exist)
+      if (deleteError2) {
+        console.warn('Bidirectional delete failed:', deleteError2);
+      }
+
+      // 3. Remove profile_access records (both directions)
+      await supabase
+        .from('profile_access')
+        .delete()
+        .eq('owner_user_id', savedUserId)
+        .eq('viewer_user_id', user.id);
+
+      await supabase
+        .from('profile_access')
+        .delete()
+        .eq('owner_user_id', user.id)
+        .eq('viewer_user_id', savedUserId);
 
       setConnections(prev => prev.filter(c => c.id !== connectionId));
       toast({
         title: "Connection Removed",
-        description: `${ownerName}'s card has been removed from your connections.`,
+        description: `Connection with ${ownerName} has been removed for both parties.`,
       });
     } catch (error: any) {
       console.error('Error removing connection:', error);
@@ -223,22 +250,23 @@ export const AccessManagement: React.FC = () => {
                 transition={{ delay: index * 0.1 }}
                 className="flex flex-col"
               >
-                {/* Digital Card Preview */}
-                <Card 
+                {/* Digital Card Preview - Embedded iframe */}
+                <Card
                   className="relative overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 border-2 hover:border-primary/50"
                   onClick={() => navigate(`/${connection.card_vanity_url}`)}
                 >
-                  <div className="aspect-[1.586/1] bg-gradient-to-br from-primary/10 via-background to-purple-500/10 p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-2xl font-bold mb-1">{connection.owner_name}</h3>
-                      {connection.owner_job_title && (
-                        <p className="text-muted-foreground">{connection.owner_job_title}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">@{connection.card_vanity_url}</p>
-                      <div className="text-xs text-muted-foreground">
-                        Saved {new Date(connection.saved_at).toLocaleDateString()}
+                  <div className="aspect-[1.586/1] relative">
+                    <iframe
+                      src={`/${connection.card_vanity_url}?embed=true`}
+                      className="w-full h-full border-0 pointer-events-none"
+                      title={`${connection.owner_name}'s Card`}
+                      sandbox="allow-same-origin"
+                    />
+                    {/* Overlay for saved date */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                      <div className="flex items-center justify-between text-white text-xs">
+                        <span>@{connection.card_vanity_url}</span>
+                        <span>Saved {new Date(connection.saved_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -263,13 +291,13 @@ export const AccessManagement: React.FC = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Remove {connection.owner_name}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will remove their card from your connections. You can always scan their QR code again to reconnect.
+                          This will remove the connection for both you and {connection.owner_name}. Both parties will lose access to each other's cards. You can always reconnect by scanning their QR code again.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => handleRemoveConnection(connection.id, connection.owner_name)}
+                          onClick={() => handleRemoveConnection(connection.id, connection.saved_user_id, connection.owner_name)}
                           className="bg-destructive hover:bg-destructive/90"
                         >
                           Remove

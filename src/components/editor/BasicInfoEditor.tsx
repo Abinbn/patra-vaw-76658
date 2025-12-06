@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload } from 'lucide-react';
+import { Upload, Check, Loader2, Camera, User as UserIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { User } from '@supabase/supabase-js';
@@ -20,6 +20,25 @@ export const BasicInfoEditor: React.FC<BasicInfoEditorProps> = ({ cardData, setC
     const [urlAvailable, setUrlAvailable] = useState<boolean | null>(null);
     const [checkingUrl, setCheckingUrl] = useState(false);
     const [urlRestrictionReason, setUrlRestrictionReason] = useState<string | null>(null);
+
+    // Avatar State
+    const [googleAvatarUrl, setGoogleAvatarUrl] = useState<string | null>(null);
+    const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            const googleUrl = user.user_metadata?.avatar_url;
+            setGoogleAvatarUrl(googleUrl || null);
+
+            const savedCustomUrl = user.user_metadata?.custom_avatar_url;
+            if (savedCustomUrl) {
+                setCustomAvatarUrl(savedCustomUrl);
+            } else if (cardData.avatarUrl && cardData.avatarUrl !== googleUrl) {
+                // Current is custom, but not saved in metadata yet
+                setCustomAvatarUrl(cardData.avatarUrl);
+            }
+        }
+    }, [user, cardData.avatarUrl]);
 
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -40,7 +59,14 @@ export const BasicInfoEditor: React.FC<BasicInfoEditorProps> = ({ cardData, setC
                 .from('avatars')
                 .getPublicUrl(fileName);
 
+            // Update card data
             setCardData({ ...cardData, avatarUrl: publicUrl });
+            setCustomAvatarUrl(publicUrl);
+
+            // Save custom avatar to user metadata for persistence
+            await supabase.auth.updateUser({
+                data: { custom_avatar_url: publicUrl }
+            });
 
             toast({
                 title: "Avatar uploaded!",
@@ -125,45 +151,80 @@ export const BasicInfoEditor: React.FC<BasicInfoEditorProps> = ({ cardData, setC
                 </p>
             </div>
 
-            <div className="flex flex-col items-center gap-4">
-                <Avatar className="w-32 h-32">
-                    <AvatarImage src={cardData.avatarUrl} />
-                    <AvatarFallback className="text-3xl">
-                        {cardData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'UN'}
-                    </AvatarFallback>
-                </Avatar>
-
-                <div className="flex flex-col gap-2 w-full max-w-xs">
-                    <Label htmlFor="avatar-upload" className="cursor-pointer w-full">
-                        <Button variant="outline" disabled={uploadingAvatar} className="w-full" asChild>
-                            <span>
-                                <Upload className="w-4 h-4 mr-2" />
-                                {uploadingAvatar ? 'Uploading...' : 'Upload Photo'}
-                            </span>
-                        </Button>
-                    </Label>
-                    <Input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                    />
-
-                    {user?.user_metadata?.avatar_url && (
-                        <Button
-                            variant="ghost"
-                            className="w-full text-xs"
-                            onClick={() => setCardData({ ...cardData, avatarUrl: user.user_metadata.avatar_url })}
-                        >
-                            Use Google Profile Picture
-                        </Button>
-                    )}
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-4">
+                    <Avatar className="w-32 h-32 border-4 border-background shadow-xl">
+                        <AvatarImage src={cardData.avatarUrl} />
+                        <AvatarFallback className="text-3xl">
+                            {cardData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'UN'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium text-muted-foreground">Current Active Avatar</p>
                 </div>
 
-                <p className="text-xs text-muted-foreground text-center">
-                    Recommended: Square image, at least 400x400px
-                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mx-auto">
+                    {/* Google Option */}
+                    {googleAvatarUrl && (
+                        <div
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${cardData.avatarUrl === googleAvatarUrl ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                            onClick={() => cardData.avatarUrl !== googleAvatarUrl && setCardData({ ...cardData, avatarUrl: googleAvatarUrl })}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={googleAvatarUrl} />
+                                    <AvatarFallback>G</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-medium text-sm">Google Profile</p>
+                                    <p className="text-xs text-muted-foreground">Synced from Google</p>
+                                </div>
+                                {cardData.avatarUrl === googleAvatarUrl && <Check className="w-4 h-4 text-primary" />}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Custom Option */}
+                    <div
+                        className={`p-4 rounded-xl border-2 transition-all ${cardData.avatarUrl !== googleAvatarUrl ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                    >
+                        <div
+                            className="flex items-center gap-3 mb-3 cursor-pointer"
+                            onClick={() => customAvatarUrl && cardData.avatarUrl !== customAvatarUrl && setCardData({ ...cardData, avatarUrl: customAvatarUrl })}
+                        >
+                            <Avatar className="h-10 w-10">
+                                <AvatarImage src={customAvatarUrl || cardData.avatarUrl} />
+                                <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <p className="font-medium text-sm">Custom Upload</p>
+                                <p className="text-xs text-muted-foreground">Uploaded by you</p>
+                            </div>
+                            {cardData.avatarUrl !== googleAvatarUrl && <Check className="w-4 h-4 text-primary" />}
+                        </div>
+
+                        <div className="flex gap-2">
+                            {customAvatarUrl && cardData.avatarUrl !== customAvatarUrl && (
+                                <Button size="sm" variant="outline" className="flex-1" onClick={() => setCardData({ ...cardData, avatarUrl: customAvatarUrl })}>
+                                    Use This
+                                </Button>
+                            )}
+                            <div className="relative flex-1">
+                                <input
+                                    type="file"
+                                    id="avatar-upload"
+                                    accept="image/*"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    onChange={handleAvatarUpload}
+                                    disabled={uploadingAvatar}
+                                />
+                                <Button size="sm" variant={cardData.avatarUrl !== googleAvatarUrl ? "secondary" : "outline"} className="w-full" disabled={uploadingAvatar}>
+                                    {uploadingAvatar ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Camera className="w-3 h-3 mr-2" />}
+                                    {customAvatarUrl ? 'Replace' : 'Upload'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="space-y-4 pt-4">

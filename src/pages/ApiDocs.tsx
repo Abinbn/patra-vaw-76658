@@ -491,17 +491,94 @@ export const ApiDocs: React.FC = () => {
           )}
 
           {/* SDKs */}
+          {/* SDKs */}
           {activeSection === 'sdks' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-3xl font-bold">SDKs & Libraries</h2>
+              <h2 className="text-3xl font-bold">Patra Web SDK</h2>
               <p className="text-muted-foreground">
-                Official libraries coming soon. For now, use standard HTTP requests.
+                Easily embed digital cards into any website using our Web Component SDK.
               </p>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <p className="text-sm">
-                  We are working on official Node.js and React SDKs. Stay tuned!
-                </p>
+              <div className="space-y-4">
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle>Quick Start</CardTitle>
+                    <CardDescription>Add the SDK script to your HTML page.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>1. Include the Script</Label>
+                      <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm relative group">
+                        <pre className="whitespace-pre-wrap break-all">
+                          {`<script type="module" src="https://patra.app/patra-sdk.js"></script>`}
+                        </pre>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleCopy(`<script type="module" src="https://patra.app/patra-sdk.js"></script>`, 'sdk-script')}
+                        >
+                          {copiedId === 'sdk-script' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>2. Add the Component</Label>
+                      <div className="bg-slate-950 text-slate-50 p-4 rounded-lg font-mono text-sm relative group">
+                        <pre className="whitespace-pre-wrap break-all">
+                          {`<patra-card username="${testUsername || 'username'}" width="400" height="250"></patra-card>`}
+                        </pre>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleCopy(`<patra-card username="${testUsername || 'username'}" width="400" height="250"></patra-card>`, 'sdk-component')}
+                        >
+                          {copiedId === 'sdk-component' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Attributes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex justify-between">
+                          <code className="bg-muted px-1 rounded">username</code>
+                          <span className="text-muted-foreground">Required. Vanity URL or ID.</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <code className="bg-muted px-1 rounded">width</code>
+                          <span className="text-muted-foreground">Optional. Default: 400.</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <code className="bg-muted px-1 rounded">height</code>
+                          <span className="text-muted-foreground">Optional. Default: 250.</span>
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>JavaScript API</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        You can also render cards programmatically:
+                      </p>
+                      <code className="block bg-muted p-2 rounded text-xs font-mono">
+                        Patra.renderCard('username', 'container-id');
+                      </code>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           )}

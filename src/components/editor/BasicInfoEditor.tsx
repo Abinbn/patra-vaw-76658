@@ -151,65 +151,64 @@ export const BasicInfoEditor: React.FC<BasicInfoEditorProps> = ({ cardData, setC
                 </p>
 
                 <div className="flex flex-col gap-6">
-                    <div className="flex flex-col items-center gap-4">
-                        <p className="text-sm font-medium text-muted-foreground">Current Active Avatar</p>
-                        
+                    <div className="flex flex-col items-center gap-6">
                         {googleAvatarUrl ? (
-                            <div className="flex items-center justify-center relative h-40 w-full max-w-xs mx-auto">
-                                {/* Custom Avatar (Left) */}
-                                <div className="relative z-10 transition-transform duration-300 hover:scale-105">
-                                    <Avatar className={`w-32 h-32 border-4 shadow-xl ${cardData.avatarUrl !== googleAvatarUrl ? 'border-primary ring-2 ring-primary/20' : 'border-background'}`}>
-                                        <AvatarImage src={customAvatarUrl || cardData.avatarUrl} />
-                                        <AvatarFallback className="text-3xl">
-                                            {cardData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'UN'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    
-                                    {/* Upload Button overlay on custom avatar */}
-                                    <div className="absolute bottom-0 right-0">
-                                        <Label htmlFor="avatar-upload-swap" className="cursor-pointer">
-                                            <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90 transition-colors">
-                                                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                                            </div>
-                                        </Label>
-                                        <Input
-                                            id="avatar-upload-swap"
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="flex items-center justify-center relative h-32 w-full max-w-xs mx-auto">
+                                    {/* Custom Avatar (Left) */}
+                                    <div
+                                        className={`relative transition-all duration-300 ${cardData.avatarUrl !== googleAvatarUrl ? 'z-20 scale-110' : 'z-10 scale-90 opacity-60 hover:opacity-100 cursor-pointer'}`}
+                                        onClick={() => cardData.avatarUrl === googleAvatarUrl && setCardData({ ...cardData, avatarUrl: customAvatarUrl || cardData.avatarUrl })}
+                                    >
+                                        <Avatar className={`w-28 h-28 border-4 shadow-xl ${cardData.avatarUrl !== googleAvatarUrl ? 'border-primary ring-2 ring-primary/20' : 'border-background'}`}>
+                                            <AvatarImage src={customAvatarUrl || (cardData.avatarUrl !== googleAvatarUrl ? cardData.avatarUrl : undefined)} />
+                                            <AvatarFallback className="text-3xl">
+                                                {cardData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'UN'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </div>
+
+                                    {/* Google Avatar (Right) */}
+                                    <div
+                                        className={`relative -ml-8 transition-all duration-300 ${cardData.avatarUrl === googleAvatarUrl ? 'z-20 scale-110' : 'z-10 scale-90 opacity-60 hover:opacity-100 cursor-pointer'}`}
+                                        onClick={() => cardData.avatarUrl !== googleAvatarUrl && setCardData({ ...cardData, avatarUrl: googleAvatarUrl })}
+                                    >
+                                        <div className={`p-[3px] rounded-full ${cardData.avatarUrl === googleAvatarUrl ? 'bg-[conic-gradient(from_0deg,#EA4335_0deg_90deg,#4285F4_90deg_180deg,#34A853_180deg_270deg,#FBBC05_270deg_360deg)]' : 'bg-muted'}`}>
+                                            <Avatar className="w-28 h-28 border-4 border-background">
+                                                <AvatarImage src={googleAvatarUrl} />
+                                                <AvatarFallback>G</AvatarFallback>
+                                            </Avatar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            const newUrl = cardData.avatarUrl === googleAvatarUrl ? (customAvatarUrl || cardData.avatarUrl) : googleAvatarUrl;
+                                            setCardData({ ...cardData, avatarUrl: newUrl });
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <ArrowRightLeft className="w-4 h-4" />
+                                        Swap Profile
+                                    </Button>
+
+                                    <div className="relative">
+                                        <input
                                             type="file"
+                                            id="avatar-upload-new"
                                             accept="image/*"
-                                            className="hidden"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                             onChange={handleAvatarUpload}
                                             disabled={uploadingAvatar}
                                         />
+                                        <Button variant="secondary" disabled={uploadingAvatar} className="gap-2">
+                                            {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                                            Upload New
+                                        </Button>
                                     </div>
-                                </div>
-
-                                {/* Swap Action */}
-                                <div 
-                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-background rounded-full p-2 shadow-lg cursor-pointer border border-border hover:bg-muted transition-colors"
-                                    onClick={() => {
-                                        const newUrl = cardData.avatarUrl === googleAvatarUrl ? (customAvatarUrl || cardData.avatarUrl) : googleAvatarUrl;
-                                        setCardData({ ...cardData, avatarUrl: newUrl });
-                                    }}
-                                >
-                                    <ArrowRightLeft className="w-5 h-5 text-muted-foreground" />
-                                </div>
-
-                                {/* Google Avatar (Right) */}
-                                <div 
-                                    className="relative z-20 -ml-8 cursor-pointer transition-transform duration-300 hover:scale-105"
-                                    onClick={() => setCardData({ ...cardData, avatarUrl: googleAvatarUrl })}
-                                > 
-                                    <div className={`p-[3px] rounded-full ${cardData.avatarUrl === googleAvatarUrl ? 'bg-[conic-gradient(from_0deg,#EA4335_0deg_90deg,#4285F4_90deg_180deg,#34A853_180deg_270deg,#FBBC05_270deg_360deg)]' : 'bg-muted'}`}>
-                                        <Avatar className="w-32 h-32 border-4 border-background">
-                                            <AvatarImage src={googleAvatarUrl} />
-                                            <AvatarFallback>G</AvatarFallback>
-                                        </Avatar>
-                                    </div>
-                                    {cardData.avatarUrl === googleAvatarUrl && (
-                                        <div className="absolute bottom-2 right-2 bg-background rounded-full p-1 shadow-md">
-                                            <Check className="w-4 h-4 text-green-500" />
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -220,7 +219,7 @@ export const BasicInfoEditor: React.FC<BasicInfoEditorProps> = ({ cardData, setC
                                         {cardData.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'UN'}
                                     </AvatarFallback>
                                 </Avatar>
-                                
+
                                 <div className="relative">
                                     <input
                                         type="file"

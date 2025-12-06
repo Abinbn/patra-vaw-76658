@@ -56,7 +56,7 @@ export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [copiedApiKey, setCopiedApiKey] = useState(false);
-  
+
   // Avatar State
   const [uploading, setUploading] = useState(false);
   const [googleAvatarUrl, setGoogleAvatarUrl] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export const Settings: React.FC = () => {
       // Initialize avatar states
       const googleUrl = user.user_metadata?.avatar_url;
       setGoogleAvatarUrl(googleUrl || null);
-      
+
       const savedCustomUrl = user.user_metadata?.custom_avatar_url;
       if (savedCustomUrl) {
         setCustomAvatarUrl(savedCustomUrl);
@@ -153,7 +153,7 @@ export const Settings: React.FC = () => {
 
       setCustomAvatarUrl(publicUrl);
       setProfile({ ...profile, avatar_url: publicUrl });
-      
+
       toast({
         title: "Avatar updated",
         description: "Your profile picture has been updated.",
@@ -322,79 +322,27 @@ export const Settings: React.FC = () => {
                     <CardDescription>Update your photo and personal details here.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                      {/* Current Active Avatar */}
-                      <div className="flex flex-col items-center gap-3">
-                        <Label className="text-muted-foreground">Current Avatar</Label>
-                        <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-                          <AvatarImage src={profile?.avatar_url} />
-                          <AvatarFallback className="text-4xl">{profile?.display_name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      </div>
-
-                      {/* Selection Area */}
-                      <div className="space-y-4 flex-1 w-full">
-                        <Label>Choose Avatar Source</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Google Option */}
-                          {googleAvatarUrl && (
-                            <div 
-                              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${profile?.avatar_url === googleAvatarUrl ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-                              onClick={() => profile?.avatar_url !== googleAvatarUrl && setAvatar(googleAvatarUrl)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={googleAvatarUrl} />
-                                  <AvatarFallback>G</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <p className="font-medium text-sm">Google Profile</p>
-                                  <p className="text-xs text-muted-foreground">Synced from Google</p>
-                                </div>
-                                {profile?.avatar_url === googleAvatarUrl && <Check className="w-4 h-4 text-primary" />}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Custom Option */}
-                          <div 
-                            className={`p-4 rounded-xl border-2 transition-all ${profile?.avatar_url !== googleAvatarUrl ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-                          >
-                            <div className="flex items-center gap-3 mb-3" onClick={() => customAvatarUrl && profile?.avatar_url !== customAvatarUrl && setAvatar(customAvatarUrl)}>
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={customAvatarUrl || profile?.avatar_url} />
-                                <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 cursor-pointer">
-                                <p className="font-medium text-sm">Custom Upload</p>
-                                <p className="text-xs text-muted-foreground">Uploaded by you</p>
-                              </div>
-                              {profile?.avatar_url !== googleAvatarUrl && <Check className="w-4 h-4 text-primary" />}
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              {customAvatarUrl && profile?.avatar_url !== customAvatarUrl && (
-                                <Button size="sm" variant="outline" className="flex-1" onClick={() => setAvatar(customAvatarUrl)}>
-                                  Use This
-                                </Button>
-                              )}
-                              <div className="relative flex-1">
-                                <input
-                                  type="file"
-                                  id="avatar-upload"
-                                  accept="image/*"
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  onChange={handleAvatarUpload}
-                                  disabled={uploading}
-                                />
-                                <Button size="sm" variant={profile?.avatar_url !== googleAvatarUrl ? "secondary" : "outline"} className="w-full" disabled={uploading}>
-                                  {uploading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Camera className="w-3 h-3 mr-2" />}
-                                  {customAvatarUrl ? 'Replace' : 'Upload'}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                    <div className="flex items-center gap-6">
+                      <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+                        <AvatarImage src={profile?.avatar_url} />
+                        <AvatarFallback className="text-2xl">{profile?.display_name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="avatar-upload-settings"
+                            accept="image/*"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleAvatarUpload}
+                            disabled={uploading}
+                          />
+                          <Button variant="outline" size="sm" disabled={uploading}>
+                            {uploading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Camera className="w-3 h-3 mr-2" />}
+                            Change Avatar
+                          </Button>
                         </div>
+                        <p className="text-xs text-muted-foreground">JPG, GIF or PNG. Max size of 800K</p>
                       </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">

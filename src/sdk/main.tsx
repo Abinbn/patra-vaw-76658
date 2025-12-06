@@ -33,14 +33,15 @@ class PatraCard extends HTMLElement {
   }
 
   async fetchCardData(username: string): Promise<CardData | null> {
+    const SUPABASE_URL = "https://ffpqhgiucoqjmkyeevqq.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmcHFoZ2l1Y29xam1reWVldnFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjY3NjcsImV4cCI6MjA3NDMwMjc2N30.9Vb7U2X0nT1dG8PP0x9LtGy3iPEkYeVMhEyvB6ZqQ6Q";
+
     try {
-      // Use the public Edge Function URL
-      const response = await fetch(`https://ffpqhgiucoqjmkyeevqq.supabase.co/functions/v1/get-card?vanity_url=${username}`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/get-card?vanity_url=${username}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add anon key if needed, but get-card should be public
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         }
       });
 

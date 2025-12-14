@@ -59,14 +59,37 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
         }
     }, [isOpen, initialMode, cards]);
 
-    // Brightness simulation
+    // Brightness simulation & Wake Lock
     useEffect(() => {
+        let wakeLock: any = null;
+
+        const requestWakeLock = async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    // @ts-ignore
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err: any) {
+                    console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+                }
+            }
+        };
+
         if (isOpen && mode === 'send') {
             setBrightnessBoosted(true);
-            // In a real native app, we would call a bridge to increase screen brightness
+            requestWakeLock();
         } else {
             setBrightnessBoosted(false);
+            if (wakeLock) {
+                wakeLock.release().catch(console.error);
+                wakeLock = null;
+            }
         }
+
+        return () => {
+            if (wakeLock) {
+                wakeLock.release().catch(console.error);
+            }
+        };
     }, [isOpen, mode]);
 
     // Initialize Scanner when entering Receive mode
@@ -411,7 +434,7 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
                                         <motion.div
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            className="relative group"
+                                            className={`relative group transition-all duration-300 ${brightnessBoosted ? 'brightness-125 contrast-125' : ''}`}
                                         >
                                             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                                             <div className="relative bg-white p-6 rounded-xl shadow-xl">
@@ -481,6 +504,14 @@ export const CardDropModal: React.FC<CardDropModalProps> = ({
                                                 </Button>
                                             </div>
                                         )}
+                                        {/* CSS Fix for Scanner Alignment */}
+                                        <style dangerouslySetInnerHTML={{
+                                            __html: `
+                                            #qr-reader { border: none !important; }
+                                            #qr-reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 0.75rem; }
+                                            #qr-reader__scan_region { width: 100% !important; height: 100% !important; }
+                                            #qr-reader__dashboard_section_csr span { display: none !important; }
+                                        `}} />
                                     </div>
 
                                     <div className="pt-2">

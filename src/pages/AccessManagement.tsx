@@ -251,7 +251,6 @@ export const AccessManagement: React.FC = () => {
               <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="rounded-full hover:bg-muted">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <LogViewer />
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                   <Shield className="w-6 h-6 text-primary" />
@@ -262,10 +261,11 @@ export const AccessManagement: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="hidden md:block">
-              <div className="text-xl font-bold text-foreground">
+            <div className="flex items-center gap-4">
+              <div className="hidden md:block text-xl font-bold text-foreground">
                 <span className="text-muted-foreground">P</span>atra
               </div>
+              <LogViewer />
             </div>
           </div>
         </div>
@@ -345,11 +345,7 @@ export const AccessManagement: React.FC = () => {
                           Your profile is shared to {connection.owner_name}, therefore you now have access to {connection.owner_name}'s profile.
                           If you no longer want to share your profile with {connection.owner_name}, you can revoke access.
                         </p>
-                      ) : (
-                        <p>
-                          {connection.owner_name}'s profile is saved.
-                        </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="flex gap-2">

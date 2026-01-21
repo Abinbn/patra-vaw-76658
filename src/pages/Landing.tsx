@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation } from '@/components/navigation';
+import { useNavigate } from 'react-router-dom';
 import { HeroButton } from '@/components/ui/hero-button';
 import { MorphText } from '@/components/MorphText';
 import { Sparkles, Zap, Share2, Smartphone, Users, BarChart3, Shield, Palette, QrCode, Globe, CreditCard, Layers, ArrowRight, Play, ChevronRight, Star, Award, Check, Eye, MousePointer2, Wifi, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 export const Landing: React.FC = () => {
+  const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({
     x: 0,
     y: 0
@@ -448,7 +450,10 @@ export const Landing: React.FC = () => {
               </div>
             </div>
 
-            <div className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-amber-300 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <div
+              className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-amber-300 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+              onClick={() => navigate('/pricing')}
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-orange-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -465,7 +470,10 @@ export const Landing: React.FC = () => {
               </div>
             </div>
 
-            <div className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-rose-300 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <div
+              className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-rose-300 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+              onClick={() => navigate('/onboarding')}
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-rose-50/50 to-pink-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -482,7 +490,10 @@ export const Landing: React.FC = () => {
               </div>
             </div>
 
-            <div className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-indigo-300 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <div
+              className="group relative bg-white rounded-2xl p-8 border border-slate-200 hover:border-indigo-300 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+              onClick={() => navigate('/editor?new=true')}
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">

@@ -250,6 +250,7 @@ export const Dashboard: React.FC = () => {
           <SidebarNavItem icon={LayoutDashboard} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
           <SidebarNavItem icon={CreditCard} label="My Cards" active={activeTab === 'cards'} onClick={() => setActiveTab('cards')} />
           <SidebarNavItem icon={UsersIcon} label="Connections" active={activeTab === 'connections'} onClick={() => setActiveTab('connections')} />
+          <SidebarNavItem icon={Shield} label="Corporate" active={activeTab === 'corporate'} onClick={() => setActiveTab('corporate')} />
           <SidebarNavItem icon={BarChart3} label="Analytics" active={activeTab === 'analytics'} onClick={() => navigate('/analytics')} />
           <div className="pt-4 mt-4 border-t border-slate-100">
             <SidebarNavItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => navigate('/settings')} />
@@ -448,6 +449,88 @@ export const Dashboard: React.FC = () => {
                     <p className="text-sm text-slate-500 text-center mt-1">Add another persona or business profile to your account.</p>
                   </motion.div>
                 </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'corporate' && (
+              <motion.div
+                key="corporate"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="max-w-4xl mx-auto"
+              >
+                <div className="text-center mb-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl text-white">
+                    <Shield className="w-10 h-10" />
+                  </div>
+                  <h1 className="text-4xl font-black text-slate-900 mb-4">Patra for Organizations</h1>
+                  <p className="text-lg text-slate-600">The most powerful way to manage your team's digital identity.</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 mb-12">
+                  <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                    <div className="h-2 bg-indigo-500" />
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-2 group-hover:scale-110 transition-transform">
+                        <UsersIcon className="w-6 h-6" />
+                      </div>
+                      <CardTitle>Staff Management</CardTitle>
+                      <CardDescription>Bulk create and manage cards for your entire team from a single dashboard.</CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                    <div className="h-2 bg-purple-500" />
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-2 group-hover:scale-110 transition-transform">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <CardTitle>Company Vanity URL</CardTitle>
+                      <CardDescription>Get a unique organization URL like patra.me/yourcompany to host all employee cards.</CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                    <div className="h-2 bg-blue-500" />
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-2 group-hover:scale-110 transition-transform">
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <CardTitle>Instant Onboarding</CardTitle>
+                      <CardDescription>Unique invite links for employees to submit their data directly for your approval.</CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                    <div className="h-2 bg-emerald-500" />
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-2 group-hover:scale-110 transition-transform">
+                        <BarChart3 className="w-6 h-6" />
+                      </div>
+                      <CardTitle>Unified Analytics</CardTitle>
+                      <CardDescription>Track the total networking impact of your company across all staff members.</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </div>
+
+                <Card className="border-2 border-indigo-100 bg-indigo-50/50 shadow-2xl rounded-3xl overflow-hidden p-8 text-center">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Upgrade to Corporate Profile</h3>
+                  <p className="text-slate-600 mb-8 max-w-lg mx-auto">
+                    Get access to all organization features for a one-time verification fee of ₹999.
+                    Switch your account type and start managing your team today.
+                  </p>
+                  <Button
+                    className="h-14 px-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-indigo-200"
+                    onClick={() => navigate('/onboarding')}
+                  >
+                    Try Corporate Profile Now
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  </Button>
+                  <p className="text-xs text-slate-400 mt-6 italic">
+                    Note: Your existing individual cards will be preserved, but your dashboard will transition to Corporate Mode.
+                  </p>
+                </Card>
               </motion.div>
             )}
 

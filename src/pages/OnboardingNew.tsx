@@ -11,8 +11,9 @@ import { Progress } from '@/components/ui/progress';
 import {
   ChevronRight, ChevronLeft, Users, Building2, User, AlertCircle,
   Brain, Wand2, Palette, Sparkles, Check, CreditCard, MapPin, Info,
-  Camera, Mail, Briefcase, FileText, Upload
+  Camera, Mail, Briefcase, FileText, Upload, Smartphone, Lock
 } from 'lucide-react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +24,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import { Checkbox } from '@/components/ui/checkbox';
+
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
@@ -75,6 +84,10 @@ export const OnboardingNew: React.FC = () => {
   const [aiLoadingStep, setAiLoadingStep] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdVanityUrl, setCreatedVanityUrl] = useState('');
+  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
+  const [paymentStep, setPaymentStep] = useState<'method' | 'processing' | 'success'>('method');
+
+
   const [data, setData] = useState<OnboardingData>({
     accountType: null,
     display_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
@@ -199,10 +212,29 @@ export const OnboardingNew: React.FC = () => {
   };
 
   const handleComplete = () => {
-    setLoading(true);
-    setShowAILoading(true);
-    setAiLoadingStep(0);
+    if (data.accountType === 'company') {
+      setShowPaymentGateway(true);
+      setPaymentStep('method');
+    } else {
+      setLoading(true);
+      setShowAILoading(true);
+      setAiLoadingStep(0);
+    }
   };
+
+  const simulatePayment = () => {
+    setPaymentStep('processing');
+    setTimeout(() => {
+      setPaymentStep('success');
+      setTimeout(() => {
+        setShowPaymentGateway(false);
+        setLoading(true);
+        setShowAILoading(true);
+        setAiLoadingStep(0);
+      }, 2000);
+    }, 3000);
+  };
+
 
   const completeOnboarding = async () => {
     if (!user) return;
@@ -534,8 +566,8 @@ export const OnboardingNew: React.FC = () => {
               <div
                 key={index}
                 className={`h-2 rounded-full transition-all duration-500 ${index <= aiLoadingStep
-                    ? 'w-8 bg-gradient-to-r from-violet-600 to-purple-600'
-                    : 'w-2 bg-slate-300'
+                  ? 'w-8 bg-gradient-to-r from-violet-600 to-purple-600'
+                  : 'w-2 bg-slate-300'
                   }`}
               />
             ))}
@@ -609,21 +641,26 @@ export const OnboardingNew: React.FC = () => {
                     </p>
                   </button>
 
-                  <div className="group relative p-6 rounded-2xl border-2 border-slate-300 bg-slate-50 opacity-60 cursor-not-allowed text-left">
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg z-10">
-                      Under Development
+                  <button
+                    onClick={() => handleAccountTypeSelect('company')}
+                    className="group relative p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition-all duration-300 text-left hover:shadow-2xl hover:shadow-blue-100"
+                  >
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg z-10 animate-bounce">
+                      RECOMMENDED
                     </div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <Building2 className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-600 mb-2">Company</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Company</h3>
+                    <p className="text-sm text-slate-600">
                       For organizations managing employee cards
                     </p>
-                    <div className="mt-3 text-xs text-slate-500 font-medium">
-                      Requires verification (₹20)
+                    <div className="mt-3 text-xs text-blue-600 font-bold bg-blue-100 px-3 py-1 rounded-full w-fit flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Premium Account (₹999)
                     </div>
-                  </div>
+                  </button>
+
                 </div>
               </div>
             )}
@@ -756,8 +793,8 @@ export const OnboardingNew: React.FC = () => {
                         type="button"
                         onClick={() => setData({ ...data, selectedAvatarSource: 'google' })}
                         className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${data.selectedAvatarSource === 'google'
-                            ? 'border-4 border-green-500 bg-green-50'
-                            : 'border-2 border-slate-200 hover:border-slate-300'
+                          ? 'border-4 border-green-500 bg-green-50'
+                          : 'border-2 border-slate-200 hover:border-slate-300'
                           }`}
                       >
                         <Avatar className="w-24 h-24">
@@ -778,8 +815,8 @@ export const OnboardingNew: React.FC = () => {
                       type="button"
                       onClick={() => document.getElementById('avatar-upload')?.click()}
                       className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-all ${data.selectedAvatarSource === 'upload'
-                          ? 'border-4 border-green-500 bg-green-50'
-                          : 'border-2 border-slate-200 hover:border-slate-300'
+                        ? 'border-4 border-green-500 bg-green-50'
+                        : 'border-2 border-slate-200 hover:border-slate-300'
                         }`}
                     >
                       <Avatar className="w-24 h-24">
@@ -1039,7 +1076,7 @@ export const OnboardingNew: React.FC = () => {
                       <div className="flex-1">
                         <h4 className="font-semibold text-slate-900 mb-2">Verification Payment Required</h4>
                         <p className="text-sm text-slate-600 mb-3">
-                          Company accounts require a one-time verification fee of ₹20. Your account will be activated within 1-2 hours after payment.
+                          Company accounts require a one-time verification fee of ₹999. Your account will be activated instantly after payment.
                         </p>
                         <div className="flex items-center gap-2 mb-3">
                           <Checkbox
@@ -1048,9 +1085,10 @@ export const OnboardingNew: React.FC = () => {
                             onCheckedChange={(checked) => setData({ ...data, verificationPaid: checked as boolean })}
                           />
                           <Label htmlFor="payment-confirm" className="text-sm cursor-pointer">
-                            I have completed the payment of ₹20
+                            I understand the verification fee of ₹999
                           </Label>
                         </div>
+
                       </div>
                     </div>
                   </div>
@@ -1144,12 +1182,13 @@ export const OnboardingNew: React.FC = () => {
                 <h4 className="font-semibold text-slate-900">⚠️ Critical Requirements:</h4>
                 <ul className="text-sm space-y-1 list-disc list-inside text-slate-700">
                   <li>Company accounts <strong>CANNOT be changed</strong> to individual accounts</li>
-                  <li><strong>Verification fee: ₹20</strong> (required during account creation)</li>
+                  <li><strong>Verification fee: ₹999</strong> (required during account creation)</li>
                   <li>Account will be <strong>active within 1-2 hours</strong> after payment verification</li>
                   <li>Must <strong>verify company status</strong> - individual users cannot use this</li>
                   <li><strong>Employee invite fee: ₹2 per employee</strong> (payable within 2 months)</li>
                 </ul>
               </div>
+
 
               <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800 space-y-2">
                 <h4 className="font-semibold text-slate-900">✨ Company Account Benefits:</h4>
@@ -1176,6 +1215,99 @@ export const OnboardingNew: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Simulated Payment Gateway */}
+      <Dialog open={showPaymentGateway} onOpenChange={setShowPaymentGateway}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-slate-900 p-6 text-white text-center">
+            <h3 className="text-xl font-bold flex items-center justify-center gap-2">
+              <CreditCard className="w-6 h-6 text-blue-400" />
+              Secure Checkout
+            </h3>
+            <p className="text-slate-400 text-sm mt-1">Order #PATRA-{Math.floor(Math.random() * 999999)}</p>
+          </div>
+
+          <div className="p-8">
+            {paymentStep === 'method' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center">
+                  <p className="text-slate-500 text-sm uppercase font-bold tracking-wider">Total Amount</p>
+                  <p className="text-4xl font-black text-slate-900 mt-1">₹999.00</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-4 border-2 border-blue-500 bg-blue-50 rounded-xl flex items-center gap-4 cursor-pointer">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <Smartphone className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">UPI / Google Pay / PhonePe</p>
+                      <p className="text-xs text-slate-500">Pay using any UPI app</p>
+                    </div>
+                    <div className="ml-auto">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-2 border-slate-100 rounded-xl flex items-center gap-4 opacity-50 cursor-not-allowed">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <CreditCard className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-400">Debit / Credit Card</p>
+                      <p className="text-xs text-slate-400">Visa, Mastercard, RuPay</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200" onClick={simulatePayment}>
+                  Pay Now
+                </Button>
+
+                <p className="text-center text-[10px] text-slate-400">
+                  🔒 Encrypted by 256-bit SSL connection. Secured by PayPatra.
+                </p>
+              </div>
+            )}
+
+            {paymentStep === 'processing' && (
+              <div className="py-12 text-center space-y-6 animate-in fade-in duration-500">
+                <div className="relative w-24 h-24 mx-auto">
+                  <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-blue-600" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-xl font-bold text-slate-900">Securing Payment...</h4>
+                  <p className="text-slate-500">Please do not close the window or press back.</p>
+                </div>
+                <div className="max-w-[200px] mx-auto">
+                  <Progress value={65} className="h-1" />
+                </div>
+              </div>
+            )}
+
+            {paymentStep === 'success' && (
+              <div className="py-12 text-center space-y-6 animate-out-in slide-in-from-scale-95 duration-500">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 scale-110">
+                  <Check className="w-10 h-10 stroke-[3px]" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-2xl font-black text-slate-900">Payment Successful!</h4>
+                  <p className="text-slate-500">Transaction ID: TXN{Math.floor(Math.random() * 1000000)}</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg text-green-700 text-sm font-medium">
+                  Verification Complete • Corporate Access Granted
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

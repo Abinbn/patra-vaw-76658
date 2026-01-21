@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import { Navigation } from '@/components/navigation';
 import { Check, Zap, Star, Shield, Globe, Users, BarChart3, ArrowRight, Sparkles, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HeroButton } from '@/components/ui/hero-button';
 
 const PricingPage = () => {
+  const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  const handlePlanSelect = (planName: string) => {
+    if (planName === 'Business') {
+      navigate('/onboarding');
+    } else {
+      navigate('/auth');
+    }
+  };
 
   const plans = [
     {
@@ -76,11 +86,11 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen bg-[#fafafa] selection:bg-violet-100 selection:text-violet-900">
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-violet-50/50 to-transparent pointer-events-none" />
-        
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center mb-16">
             <motion.div
@@ -91,7 +101,7 @@ const PricingPage = () => {
               <Sparkles className="w-4 h-4 text-violet-600" />
               <span className="text-sm font-semibold text-slate-600">Flexible plans for every need</span>
             </motion.div>
-            
+
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -101,7 +111,7 @@ const PricingPage = () => {
               Ready to elevate your <br />
               <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">networking game?</span>
             </motion.h1>
-            
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -201,11 +211,12 @@ const PricingPage = () => {
                   ))}
                 </div>
 
-                <button className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-300 ${
-                  plan.popular 
-                    ? 'bg-slate-900 text-white shadow-xl hover:shadow-2xl hover:bg-slate-800' 
-                    : 'bg-white text-slate-900 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                }`}>
+                <button
+                  onClick={() => handlePlanSelect(plan.name)}
+                  className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-300 ${plan.popular
+                      ? 'bg-slate-900 text-white shadow-xl hover:shadow-2xl hover:bg-slate-800'
+                      : 'bg-white text-slate-900 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}>
                   {plan.buttonText}
                 </button>
               </motion.div>
@@ -278,7 +289,7 @@ const PricingPage = () => {
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-slate-900" />
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-violet-600/20 to-transparent" />
-        
+
         <div className="container mx-auto px-4 relative z-10 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">Still have questions?</h2>
           <p className="text-slate-400 mb-10 max-w-xl mx-auto">Our team is here to help you find the best solution for your networking needs.</p>

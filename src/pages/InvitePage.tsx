@@ -95,11 +95,19 @@ export const InvitePage: React.FC = () => {
                 return;
             }
 
+            // Get user's profile ID
+            const { data: userProfile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
             const { error } = await supabase
                 .from('invited_employees')
                 .insert({
                     company_profile_id: company.id,
                     employee_user_id: user.id,
+                    employee_profile_id: userProfile?.id,
                     invite_code: inviteId!,
                     status: 'joined',
                     data_submitted: formData,

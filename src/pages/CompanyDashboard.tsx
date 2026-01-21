@@ -12,7 +12,8 @@ import { toast } from '@/hooks/use-toast';
 import {
   Plus, Users, CreditCard, BarChart3, Settings, LogOut,
   Eye, Edit3, Copy, RefreshCw, Send, AlertCircle,
-  UserCheck, UserX, Link as LinkIcon, Globe, ShieldCheck, UserPlus
+  UserCheck, UserX, Link as LinkIcon, Globe, ShieldCheck, UserPlus,
+  ArrowLeft
 } from 'lucide-react';
 
 
@@ -183,7 +184,7 @@ export const CompanyDashboard: React.FC = () => {
         .from('invited_employees')
         .select(`
           *,
-          profiles:employee_user_id (
+          profiles:employee_profile_id (
             display_name,
             avatar_url,
             vanity_url

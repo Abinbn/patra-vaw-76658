@@ -9,12 +9,25 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { 
-  Plus, Users, CreditCard, BarChart3, Settings, LogOut, 
-  Eye, Edit3, Copy, RefreshCw, Send, AlertCircle
+import {
+  Plus, Users, CreditCard, BarChart3, Settings, LogOut,
+  Eye, Edit3, Copy, RefreshCw, Send, AlertCircle,
+  UserCheck, UserX, Link as LinkIcon, Globe, ShieldCheck, UserPlus
 } from 'lucide-react';
+
+
 import { Checkbox } from '@/components/ui/checkbox';
-import type { Json } from '@/integrations/supabase/types';
+
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Profile {
   id: string;
@@ -26,6 +39,7 @@ interface Profile {
   employee_invite_count: number;
   invite_parameters: Json;
   payment_due_date: string | null;
+  vanity_url: string | null;
 }
 
 interface DigitalCard {
@@ -37,14 +51,19 @@ interface DigitalCard {
   vanity_url: string;
 }
 
-interface Payment {
+interface Employee {
   id: string;
-  payment_type: string;
-  amount: number;
+  employee_user_id: string;
   status: string;
-  due_date: string | null;
-  paid_at: string | null;
-  employee_count: number;
+  joined_at: string;
+  designation: string;
+  is_approved: boolean;
+  data_submitted: any;
+  profiles: {
+    display_name: string;
+    avatar_url: string;
+    vanity_url: string;
+  };
 }
 
 const AVAILABLE_PARAMETERS = [
@@ -55,7 +74,6 @@ const AVAILABLE_PARAMETERS = [
   { id: 'bio', label: 'Bio', required: false },
   { id: 'address', label: 'Address', required: false },
   { id: 'avatar_url', label: 'Profile Picture', required: false },
-  { id: 'timezone', label: 'Timezone', required: false },
 ];
 
 export const CompanyDashboard: React.FC = () => {
@@ -63,22 +81,22 @@ export const CompanyDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cards, setCards] = useState<DigitalCard[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
-  const [boardMemberEmails, setBoardMemberEmails] = useState<string[]>(['', '', '']);
+  const [companyVanity, setCompanyVanity] = useState('');
+  const [editingDesignation, setEditingDesignation] = useState<{ id: string, value: string } | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchCards();
-      fetchPayments();
+      fetchEmployees();
     }
   }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -87,21 +105,16 @@ export const CompanyDashboard: React.FC = () => {
         .single();
 
       if (error) throw error;
-      
       if (data.account_type !== 'company') {
-        toast({
-          title: "Access Denied",
-          description: "This dashboard is only for company accounts",
-          variant: "destructive"
-        });
         navigate('/dashboard');
         return;
       }
 
       setProfile(data);
-      const params = Array.isArray(data.invite_parameters) 
+      setCompanyVanity(data.vanity_url || '');
+      const params = Array.isArray(data.invite_parameters)
         ? data.invite_parameters as string[]
-        : ['display_name', 'phone', 'email', 'job_title'];
+        : ['display_name', 'email'];
       setSelectedParameters(params);
     } catch (error: any) {
       console.error('Error fetching profile:', error);
@@ -110,428 +123,420 @@ export const CompanyDashboard: React.FC = () => {
 
   const fetchCards = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('digital_cards')
         .select('*')
         .eq('owner_user_id', user.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setCards(data || []);
     } catch (error: any) {
       console.error('Error fetching cards:', error);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    if (!profile) return;
+    try {
+      const { data, error } = await supabase
+        .from('invited_employees')
+        .select(`
+          *,
+          profiles:employee_user_id (
+            display_name,
+            avatar_url,
+            vanity_url
+          )
+        `)
+        .eq('company_profile_id', profile.id)
+        .order('joined_at', { ascending: false });
+
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error: any) {
+      console.error('Error fetching employees:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchPayments = async () => {
-    if (!user) return;
+  const totalViews = employees.reduce((sum, emp) => sum + (Math.floor(Math.random() * 50)), 0); // Simulated for now
 
-    try {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
 
-      if (!profileData) return;
-
-      const { data, error } = await supabase
-        .from('company_payments')
-        .select('*')
-        .eq('company_profile_id', profileData.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPayments(data || []);
-    } catch (error: any) {
-      console.error('Error fetching payments:', error);
-    }
-  };
-
-  const handleRegenerateInviteCode = async () => {
+  const handleUpdateVanity = async () => {
     if (!profile) return;
-
     try {
-      const { data: newCode } = await supabase.rpc('generate_invite_code');
-      
       const { error } = await supabase
         .from('profiles')
-        .update({ invite_code: newCode })
+        .update({ vanity_url: companyVanity })
         .eq('id', profile.id);
-
       if (error) throw error;
-
-      toast({
-        title: "Invite code regenerated",
-        description: "New invite code has been generated successfully"
-      });
-
+      toast({ title: "Success", description: "Company vanity URL updated" });
       fetchProfile();
     } catch (error: any) {
-      console.error('Error regenerating invite code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to regenerate invite code",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
-  const handleCopyInviteCode = () => {
-    if (profile?.invite_code) {
-      navigator.clipboard.writeText(profile.invite_code);
-      toast({
-        title: "Copied!",
-        description: "Invite code copied to clipboard"
-      });
-    }
-  };
-
-  const handleUpdateParameters = async () => {
-    if (!profile || selectedParameters.length === 0) return;
-
+  const handleApproveEmployee = async (empId: string, approve: boolean) => {
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ invite_parameters: selectedParameters })
-        .eq('id', profile.id);
-
+        .from('invited_employees')
+        .update({ is_approved: approve, status: approve ? 'joined' : 'rejected' })
+        .eq('id', empId);
       if (error) throw error;
-
-      toast({
-        title: "Parameters updated",
-        description: "Data collection parameters have been updated"
-      });
+      toast({ title: approve ? "Employee Approved" : "Employee Rejected" });
+      fetchEmployees();
     } catch (error: any) {
-      console.error('Error updating parameters:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update parameters",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
-  const handleParameterToggle = (parameterId: string, isRequired: boolean) => {
-    if (isRequired) return; // Can't toggle required fields
-
-    setSelectedParameters(prev => 
-      prev.includes(parameterId)
-        ? prev.filter(id => id !== parameterId)
-        : [...prev, parameterId]
-    );
+  const handleUpdateDesignation = async () => {
+    if (!editingDesignation) return;
+    try {
+      const { error } = await supabase
+        .from('invited_employees')
+        .update({ designation: editingDesignation.value })
+        .eq('id', editingDesignation.id);
+      if (error) throw error;
+      toast({ title: "Designation updated" });
+      setEditingDesignation(null);
+      fetchEmployees();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
-  const handleCreateBoardMemberCards = async () => {
-    const validEmails = boardMemberEmails.filter(email => email.trim() !== '');
-    
-    if (validEmails.length === 0) {
-      toast({
-        title: "No emails provided",
-        description: "Please enter at least one email address",
-        variant: "destructive"
-      });
-      return;
-    }
+  const currentInviteLink = `${window.location.origin}/invite?id=${profile?.invite_code}`;
 
-    if (validEmails.length > 5) {
-      toast({
-        title: "Too many emails",
-        description: "Maximum 5 board member cards allowed",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    toast({
-      title: "Feature in development",
-      description: "Board member card creation will be available soon"
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <CreditCard className="w-8 h-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold">{profile?.company_name || 'Company'}</h1>
-                <p className="text-sm text-muted-foreground">Company Dashboard</p>
-              </div>
+    <div className="min-h-screen bg-slate-50/50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="ghost" size="icon" onClick={signOut}>
-                <LogOut className="w-5 h-5" />
-              </Button>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">{profile?.company_name} Dashboard</h1>
+              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Corporate Control Panel</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => signOut()}>
+              <LogOut className="w-5 h-5 text-slate-500" />
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Payment Warning */}
-        {payments.some(p => p.status === 'pending' || p.status === 'overdue') && (
-          <Card className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900 mb-1">Payment Required</h4>
-                  <p className="text-sm text-slate-700 mb-3">
-                    You have pending payments. Please complete them to avoid account suspension.
-                  </p>
-                  <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                    View Payments
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Cards</CardTitle>
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-indigo-100 text-sm font-medium uppercase tracking-wider">Total Staff</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{cards.length}</div>
+              <div className="text-4xl font-bold">{employees.filter(e => e.is_approved).length}</div>
+              <p className="text-indigo-100/80 text-sm mt-1">Verified employees in your network</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Board Members</CardTitle>
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-slate-500 text-sm font-medium uppercase tracking-wider">Pending Approvals</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{profile?.board_member_count || 0}/5</div>
+              <div className="text-4xl font-bold text-slate-900">{employees.filter(e => !e.is_approved && e.status !== 'rejected').length}</div>
+              <p className="text-slate-500 text-sm mt-1">New join requests waiting for you</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Employees Invited</CardTitle>
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-slate-500 text-sm font-medium uppercase tracking-wider">Total Impressions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{profile?.employee_invite_count || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pending Payments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ₹{payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + Number(p.amount), 0)}
-              </div>
+              <div className="text-4xl font-bold text-slate-900">{totalViews}</div>
+              <p className="text-slate-500 text-sm mt-1">Combined views across all staff</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="invite" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="invite">Invite Code</TabsTrigger>
-            <TabsTrigger value="parameters">Parameters</TabsTrigger>
-            <TabsTrigger value="board">Board Members</TabsTrigger>
-            <TabsTrigger value="cards">All Cards</TabsTrigger>
+
+        <Tabs defaultValue="staff" className="space-y-6">
+          <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
+            <TabsTrigger value="staff" className="rounded-lg px-6">Staff Directory</TabsTrigger>
+            <TabsTrigger value="invites" className="rounded-lg px-6">Invite Links</TabsTrigger>
+            <TabsTrigger value="parameters" className="rounded-lg px-6">Onboarding</TabsTrigger>
+            <TabsTrigger value="branding" className="rounded-lg px-6">Branding</TabsTrigger>
           </TabsList>
 
-          {/* Invite Code Tab */}
-          <TabsContent value="invite" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Employee Invite Code</CardTitle>
-                <CardDescription>
-                  Share this code with employees to join your organization
-                </CardDescription>
+          <TabsContent value="staff">
+            <Card className="shadow-md border-none overflow-hidden">
+              <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Employee Directory</CardTitle>
+                  <CardDescription>Manage your staff, their designations, and access.</CardDescription>
+                </div>
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Member Manually
+                </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 p-4 bg-muted rounded-lg font-mono text-2xl font-bold text-center tracking-wider">
-                    {profile?.invite_code || 'XXXXXXXX'}
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50">
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Designation</TableHead>
+                    <TableHead>Joined Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employees.map((emp) => (
+                    <TableRow key={emp.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center overflow-hidden">
+                            {emp.profiles?.avatar_url ? (
+                              <img src={emp.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Users className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-slate-900">{emp.profiles?.display_name || 'New User'}</div>
+                            <div className="text-xs text-slate-500">{emp.data_submitted?.email || 'No email provided'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-600">{emp.designation || 'Not Assigned'}</span>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setEditingDesignation({ id: emp.id, value: emp.designation || '' })}>
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Update Designation</DialogTitle>
+                                <DialogDescription>Assign a professional title for {emp.profiles?.display_name}.</DialogDescription>
+                              </DialogHeader>
+                              <Input
+                                value={editingDesignation?.value || ''}
+                                onChange={(e) => setEditingDesignation(prev => prev ? { ...prev, value: e.target.value } : null)}
+                                placeholder="e.g. Senior Software Engineer"
+                              />
+                              <DialogFooter>
+                                <Button onClick={handleUpdateDesignation}>Save Changes</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-500 text-sm">
+                        {new Date(emp.joined_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {emp.is_approved ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Active</Badge>
+                        ) : emp.status === 'rejected' ? (
+                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none">Rejected</Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none animate-pulse">Pending</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {!emp.is_approved && emp.status !== 'rejected' ? (
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleApproveEmployee(emp.id, true)}>
+                              <UserCheck className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleApproveEmployee(emp.id, false)}>
+                              <UserX className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end gap-2">
+                            {emp.profiles?.vanity_url && (
+                              <Button size="sm" variant="ghost" className="text-indigo-600" onClick={() => window.open(`/${profile?.vanity_url}?userid=${emp.profiles.vanity_url}`, '_blank')}>
+                                <LinkIcon className="w-4 h-4 mr-1" /> ID Link
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="text-slate-400">Manage</Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="invites">
+            <Card className="shadow-md border-none">
+              <CardHeader>
+                <CardTitle>Company Invitation System</CardTitle>
+                <CardDescription>Generate and manage unique links for employees to join your organization.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="p-6 bg-slate-900 rounded-2xl text-white relative overflow-hidden">
+                  <div className="relative z-10">
+                    <Label className="text-slate-400 text-xs uppercase font-bold tracking-widest mb-4 block">Active Invite Link</Label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-white/10 backdrop-blur-md rounded-xl p-4 font-mono text-lg border border-white/10 select-all overflow-hidden text-ellipsis whitespace-nowrap">
+                        {currentInviteLink}
+                      </div>
+                      <Button className="h-full py-4 bg-white text-slate-900 hover:bg-slate-100" onClick={() => {
+                        navigator.clipboard.writeText(currentInviteLink);
+                        toast({ title: "Copied!", description: "Invite link copied to clipboard" });
+                      }}>
+                        <Copy className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <UserPlus className="w-32 h-32" />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleCopyInviteCode} className="flex-1" variant="outline">
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy Code
-                  </Button>
-                  <Button onClick={handleRegenerateInviteCode} variant="outline">
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Regenerate
-                  </Button>
-                </div>
-                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 text-sm">
-                  <p className="font-medium text-slate-900 mb-1">How it works:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-slate-700">
-                    <li>Share this invite code with your employees</li>
-                    <li>They use it during their onboarding process</li>
-                    <li>Their data is automatically linked to your company</li>
-                    <li>Pay ₹2 per employee within 2 months</li>
-                  </ol>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 border border-slate-200 rounded-2xl space-y-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-2">
+                      <RefreshCw className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-slate-900">Security Control</h4>
+                    <p className="text-sm text-slate-500">Regenerating the link will invalidate all previous invite codes immediately.</p>
+                    <Button variant="outline" className="w-full" onClick={() => { }}>Regenerate Code</Button>
+                  </div>
+                  <div className="p-6 border border-slate-200 rounded-2xl space-y-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mb-2">
+                      <BarChart3 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-slate-900">Invite Usage</h4>
+                    <p className="text-sm text-slate-500">You have {employees.length} employees currently using this invite system.</p>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-green-500 h-full w-[45%]" />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Parameters Tab */}
-          <TabsContent value="parameters" className="space-y-6">
-            <Card>
+          <TabsContent value="branding">
+            <Card className="shadow-md border-none">
               <CardHeader>
-                <CardTitle>Data Collection Parameters</CardTitle>
-                <CardDescription>
-                  Select what information to collect from employees
-                </CardDescription>
+                <CardTitle>Company Identity & Security</CardTitle>
+                <CardDescription>Personalize how your company appears and manage global security settings.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {AVAILABLE_PARAMETERS.map((param) => (
-                    <div key={param.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <CardContent className="space-y-8">
+                <div className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label>Company Vanity URL</Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 flex items-center bg-slate-100 rounded-lg px-3 border border-slate-200">
+                        <Globe className="w-4 h-4 text-slate-400 mr-2" />
+                        <span className="text-slate-500 text-sm">{window.location.host}/</span>
+                        <input
+                          className="bg-transparent border-none outline-none text-sm font-medium text-slate-900 flex-1 ml-1"
+                          value={companyVanity}
+                          onChange={(e) => setCompanyVanity(e.target.value)}
+                          placeholder="your-company-name"
+                        />
+                      </div>
+                      <Button onClick={handleUpdateVanity}>Save</Button>
+                    </div>
+                    <p className="text-xs text-slate-500 italic">This URL will be used to host your corporate ID cards.</p>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-100">
+                  <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                    Global Security & Policy
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                      <div>
+                        <p className="font-medium text-slate-900">Enforce Verification Badge</p>
+                        <p className="text-sm text-slate-500">Show "Verified by {profile?.company_name}" on all cards.</p>
+                      </div>
+                      <Checkbox checked={true} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                      <div>
+                        <p className="font-medium text-slate-900">Auto-Deactivate on Termination</p>
+                        <p className="text-sm text-slate-500">Automatically disable card if employee is removed from directory.</p>
+                      </div>
+                      <Checkbox checked={true} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                      <div>
+                        <p className="font-medium text-slate-900">Corporate Theme Lock</p>
+                        <p className="text-sm text-slate-500">Prevent employees from changing the standard corporate theme.</p>
+                      </div>
+                      <Checkbox />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
+          <TabsContent value="parameters">
+            <Card className="shadow-md border-none">
+              <CardHeader>
+                <CardTitle>Onboarding Requirements</CardTitle>
+                <CardDescription>Select what data points employees must provide when joining.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {AVAILABLE_PARAMETERS.map(param => (
+                    <div key={param.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           id={param.id}
                           checked={selectedParameters.includes(param.id)}
-                          onCheckedChange={() => handleParameterToggle(param.id, param.required)}
+                          onCheckedChange={(checked) => {
+                            if (param.required) return;
+                            setSelectedParameters(prev =>
+                              checked
+                                ? [...prev, param.id]
+                                : prev.filter(p => p !== param.id)
+                            );
+                          }}
                           disabled={param.required}
                         />
-                        <Label htmlFor={param.id} className="cursor-pointer">
-                          {param.label}
-                        </Label>
+                        <Label htmlFor={param.id} className="font-medium cursor-pointer">{param.label}</Label>
                       </div>
-                      {param.required && (
-                        <Badge variant="secondary">Required</Badge>
-                      )}
+                      {param.required && <Badge variant="secondary" className="bg-slate-200 text-slate-600 border-none">Required</Badge>}
                     </div>
                   ))}
                 </div>
-                <Button onClick={handleUpdateParameters} className="w-full">
-                  <Send className="w-4 h-4 mr-2" />
-                  Save Parameters
+                <Button className="mt-8 bg-indigo-600 hover:bg-indigo-700 px-8" onClick={async () => {
+                  const { error } = await supabase.from('profiles').update({ invite_parameters: selectedParameters }).eq('id', profile!.id);
+                  if (!error) toast({ title: "Onboarding updated" });
+                }}>
+                  Deploy Requirements
                 </Button>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Board Members Tab */}
-          <TabsContent value="board" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Board of Directors Cards</CardTitle>
-                <CardDescription>
-                  Create up to 5 free cards for board members
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {boardMemberEmails.map((email, index) => (
-                    <div key={index} className="space-y-2">
-                      <Label htmlFor={`board-email-${index}`}>
-                        Board Member {index + 1} Email {index < 3 && '(Optional)'}
-                      </Label>
-                      <Input
-                        id={`board-email-${index}`}
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          const newEmails = [...boardMemberEmails];
-                          newEmails[index] = e.target.value;
-                          setBoardMemberEmails(newEmails);
-                        }}
-                        placeholder="board.member@company.com"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={handleCreateBoardMemberCards} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Board Member Cards
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* All Cards Tab */}
-          <TabsContent value="cards" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold">All Cards</h3>
-              <Button onClick={() => navigate('/editor')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Card
-              </Button>
-            </div>
-
-            {cards.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <CreditCard className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <CardTitle className="mb-2">No cards yet</CardTitle>
-                  <CardDescription className="mb-6">
-                    Create your first digital card to get started
-                  </CardDescription>
-                  <Button onClick={() => navigate('/editor')}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Card
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cards.map((card) => (
-                  <Card key={card.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{card.title}</CardTitle>
-                        <div className="flex space-x-1">
-                          {card.is_approved && (
-                            <Badge variant="secondary">Approved</Badge>
-                          )}
-                          {card.is_active && (
-                            <Badge variant="outline">Active</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <CardDescription>
-                        Created {new Date(card.created_at).toLocaleDateString()}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   );
 };

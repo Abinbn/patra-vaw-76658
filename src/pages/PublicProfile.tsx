@@ -5,7 +5,8 @@ import { CardPreviewNew } from '@/components/card-preview-new';
 import { MyCard } from './mycard';
 import NotFound from './NotFound';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share2, CreditCard, Download, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Share2, CreditCard, Download, Check, Loader2, Shield } from 'lucide-react';
+
 import { toast } from '@/hooks/use-toast';
 import { updateOGMetaTags, generateShareText, shareProfile } from '@/lib/og-utils';
 import { downloadVCard } from '@/lib/vcard-utils';
@@ -61,7 +62,10 @@ interface CardData {
   latitude?: number | null;
   longitude?: number | null;
   cardImageUrl?: string;
+  corporateDesignation?: string;
+  corporateCompany?: string;
 }
+
 
 export const PublicProfile: React.FC = () => {
   const { username } = useParams<{ username: string }>();
@@ -76,8 +80,11 @@ export const PublicProfile: React.FC = () => {
   const [notFound, setNotFound] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [corporateInfo, setCorporateInfo] = useState<{ designation: string, company_name: string } | null>(null);
 
   const isCardView = searchParams.get('card') !== null;
+  const userid = searchParams.get('userid');
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -92,18 +99,21 @@ export const PublicProfile: React.FC = () => {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
 
         // Fetch card by vanity_url with profile info
+        const targetVanity = userid || username;
         const { data: card, error } = await supabase
           .from('digital_cards')
           .select(`
             *,
             profiles:owner_user_id (
+              id,
               ai_enabled,
               address,
               show_address_map,
-              location_coordinates
+              location_coordinates,
+              company_name
             )
           `)
-          .eq('vanity_url', username)
+          .eq('vanity_url', targetVanity)
           .eq('is_active', true)
           .single();
 
@@ -112,6 +122,42 @@ export const PublicProfile: React.FC = () => {
           setLoading(false);
           return;
         }
+
+        // Fetch corporate info if this is a company-specific link or if user has a membership
+        const profileData = Array.isArray(card.profiles) ? card.profiles[0] : card.profiles;
+        if (profileData?.id) {
+          const { data: membership } = await supabase
+            .from('invited_employees')
+            .select(`
+              designation,
+              company_profile_id,
+              profiles:company_profile_id (
+                company_name,
+                vanity_url
+              )
+            `)
+            .eq('employee_user_id', card.owner_user_id)
+            .eq('is_approved', true)
+            .maybeSingle();
+
+          if (membership) {
+            const companyInfo = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles;
+            // If we are on a specific company vanity link, ensure it matches
+            if (username && companyInfo?.vanity_url === username) {
+              setCorporateInfo({
+                designation: membership.designation || '',
+                company_name: companyInfo?.company_name || ''
+              });
+            } else if (!userid) {
+              // Also set it for regular vanity if available (optional)
+              setCorporateInfo({
+                designation: membership.designation || '',
+                company_name: companyInfo?.company_name || ''
+              });
+            }
+          }
+        }
+
 
         // Allow owner to view their own card even if not approved
         const isOwner = currentUser && card.owner_user_id === currentUser.id;
@@ -219,7 +265,10 @@ export const PublicProfile: React.FC = () => {
           longitude: lng,
           // Store the card image URL in the card data for OG use
           cardImageUrl: (card as any).card_image_url,
+          corporateDesignation: corporateInfo?.designation,
+          corporateCompany: corporateInfo?.company_name,
         });
+
 
         // Track analytics with device and IP info
         await supabase.from('card_analytics').insert({

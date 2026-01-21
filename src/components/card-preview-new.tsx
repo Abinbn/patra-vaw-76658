@@ -101,7 +101,10 @@ interface CardData {
   customCSS?: string;
   bannerType?: 'gradient' | 'color' | 'image' | 'blurred' | 'pattern';
   bannerValue?: string;
+  corporateDesignation?: string;
+  corporateCompany?: string;
 }
+
 
 interface CardPreviewNewProps {
   cardData: CardData;
@@ -303,12 +306,22 @@ export const CardPreviewNew: React.FC<CardPreviewNewProps> = ({ cardData, onOpen
               )}
             </div>
 
-            {cardData.jobTitle && (
+            {cardData.corporateDesignation && (
+              <div className="flex items-center gap-2 mb-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100 w-fit">
+                <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white border-0">{cardData.corporateDesignation}</Badge>
+                {cardData.corporateCompany && (
+                  <span className="text-sm font-semibold text-indigo-700">@ {cardData.corporateCompany}</span>
+                )}
+              </div>
+            )}
+
+            {cardData.jobTitle && !cardData.corporateDesignation && (
               <p className="text-base text-muted-foreground mb-2 mt-1">
                 {displayTitle}
                 {cardData.company && <span className="font-medium"> at {displayCompany}</span>}
               </p>
             )}
+
 
             <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
               {cardData.pronoun && (

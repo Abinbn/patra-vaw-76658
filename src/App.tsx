@@ -34,6 +34,8 @@ import { AccessManagement } from "./pages/AccessManagement";
 import { EmbedCard } from "./pages/EmbedCard";
 import Pricing from "./pages/Pricing";
 // import PrintCard from "./pages/Printcard";
+import { InvitePage } from "./pages/InvitePage";
+
 
 const queryClient = new QueryClient();
 
@@ -178,7 +180,9 @@ const App = () => (
             />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/invite" element={<InvitePage />} />
             <Route path="/embed/:username" element={<EmbedCard />} />
+
             <Route path="/:username/ai" element={<AIChat />} />
             <Route path="/:username" element={<PublicProfile />} />
             <Route path="*" element={<NotFound />} />

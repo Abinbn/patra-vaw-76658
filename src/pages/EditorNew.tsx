@@ -272,49 +272,65 @@ export const EditorNew: React.FC = () => {
     if (!user) return;
 
     const cardId = searchParams.get('id');
+    const isNew = searchParams.get('new') === 'true';
 
     try {
-      // Fetch both digital card and profile data
-      let cardQuery = supabase
-        .from('digital_cards')
-        .select('*');
+      // Fetch profile data first (for defaults across all cards)
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('address, show_address_map, location_coordinates')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError) console.error('Error fetching profile:', profileError);
+
+      // Handle location parsing for defaults
+      let defaultLat = null;
+      let defaultLng = null;
+      if (profileData?.location_coordinates) {
+        const coords = String(profileData.location_coordinates).replace(/[()]/g, '').split(',');
+        if (coords.length === 2) {
+          defaultLat = parseFloat(coords[0].trim());
+          defaultLng = parseFloat(coords[1].trim());
+        }
+      }
+
+      if (isNew) {
+        // If it's a new card, we start fresh but inherit address info from profile
+        if (profileData) {
+          setCardData(prev => ({
+            ...prev,
+            address: profileData.address ?? '',
+            showAddressMap: profileData.show_address_map ?? false,
+            latitude: defaultLat,
+            longitude: defaultLng
+          }));
+        }
+        return;
+      }
+
+      // Fetch digital card data
+      let cardQuery = supabase.from('digital_cards').select('*');
 
       if (cardId) {
         cardQuery = cardQuery.eq('id', cardId);
       } else {
-        // If no ID, we might be creating a new one or editing the primary one.
-        // For now, let's keep it consistent: no ID means maybe edit the first one or start fresh?
-        // Actually, if we want multi-profile, we should probably start fresh if no ID is provided,
-        // or redirect to the most recent one if that's the desired behavior.
-        // Improving it to start fresh for a new card.
+        // If no ID, fetch the most recent card
         cardQuery = cardQuery.eq('owner_user_id', user.id).order('created_at', { ascending: false }).limit(1);
       }
 
-      const [cardResult, profileResult] = await Promise.all([
-        cardQuery.maybeSingle(),
-        supabase
-          .from('profiles')
-          .select('address, show_address_map, location_coordinates')
-          .eq('user_id', user.id)
-          .maybeSingle()
-      ]);
+      const { data: cardDataResult, error: cardError } = await cardQuery.maybeSingle();
 
-      if (cardResult.error && cardResult.error.code !== 'PGRST116') throw cardResult.error;
+      if (cardError && cardError.code !== 'PGRST116') throw cardError;
 
-      if (cardResult.data && cardResult.data.content_json) {
-        const incoming = cardResult.data.content_json as Partial<CardData>;
-        const profileData = profileResult.data;
+      if (cardDataResult && cardDataResult.content_json) {
+        const incoming = cardDataResult.content_json as Partial<CardData>;
 
-        // Parse location coordinates if available
-        let lat = null;
-        let lng = null;
-        if (profileData?.location_coordinates) {
-          const coords = String(profileData.location_coordinates).replace(/[()]/g, '').split(',');
-          if (coords.length === 2) {
-            lat = parseFloat(coords[0].trim());
-            lng = parseFloat(coords[1].trim());
-          }
+        // Update URL if we fetched a specific card but didn't have ID in URL
+        if (!cardId) {
+          setSearchParams({ id: cardDataResult.id }, { replace: true });
         }
+
         // Ensure new Location section exists in order/visibility
         const defaultOrder = ['contact', 'verified', 'links', 'achievements', 'testimonials', 'interests', 'gallery', 'languages', 'location'];
         const computedOrder = Array.isArray(incoming.cardOrder) && incoming.cardOrder.length
@@ -373,8 +389,8 @@ export const EditorNew: React.FC = () => {
           cardVisibility: computedVisibility,
           address: profileData?.address ?? incoming.address ?? '',
           showAddressMap: profileData?.show_address_map ?? incoming.showAddressMap ?? false,
-          latitude: lat ?? incoming.latitude ?? null,
-          longitude: lng ?? incoming.longitude ?? null,
+          latitude: defaultLat ?? incoming.latitude ?? null,
+          longitude: defaultLng ?? incoming.longitude ?? null,
           mapUrl: incoming.mapUrl ?? '',
         }));
       }

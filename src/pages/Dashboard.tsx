@@ -345,7 +345,7 @@ export const Dashboard: React.FC = () => {
                       <p className="text-sm text-slate-500">Your network at a glance</p>
                     </div>
                     <Button
-                      onClick={() => navigate('/editor')}
+                      onClick={() => navigate('/editor?new=true')}
                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 rounded-2xl flex items-center gap-2"
                     >
                       <PlusCircle className="w-5 h-5" />
@@ -417,7 +417,7 @@ export const Dashboard: React.FC = () => {
                     <p className="text-sm text-slate-500">Manage all your networking profiles</p>
                   </div>
                   <Button
-                    onClick={() => navigate('/editor')}
+                    onClick={() => navigate('/editor?new=true')}
                     className="bg-slate-900 hover:bg-slate-800 text-white rounded-2xl flex items-center gap-2"
                   >
                     <PlusCircle className="w-5 h-5" />
@@ -439,7 +439,7 @@ export const Dashboard: React.FC = () => {
                   <motion.div
                     className="group h-[380px] rounded-3xl border-2 border-dashed border-slate-200 hover:border-primary/50 hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center justify-center p-8"
                     whileHover={{ y: -4 }}
-                    onClick={() => navigate('/editor')}
+                    onClick={() => navigate('/editor?new=true')}
                   >
                     <div className="w-14 h-14 rounded-full bg-slate-100 group-hover:bg-primary/10 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors mb-4">
                       <Plus className="w-8 h-8" />

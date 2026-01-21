@@ -78,7 +78,7 @@ const AVAILABLE_PARAMETERS = [
 ];
 
 export const CompanyDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cards, setCards] = useState<DigitalCard[]>([]);
@@ -90,19 +90,30 @@ export const CompanyDashboard: React.FC = () => {
   const [editingDesignation, setEditingDesignation] = useState<{ id: string, value: string } | null>(null);
 
   useEffect(() => {
-    if (user) {
-      const loadAll = async () => {
-        setLoading(true);
-        const fetchedProfile = await fetchProfile();
-        await fetchCards();
-        if (fetchedProfile) {
-          await fetchEmployees(fetchedProfile.id);
-        }
+    // Only proceed once auth has finished loading the session
+    if (!authLoading) {
+      if (user) {
+        const loadAll = async () => {
+          try {
+            setLoading(true);
+            const fetchedProfile = await fetchProfile();
+            await fetchCards();
+            if (fetchedProfile) {
+              await fetchEmployees(fetchedProfile.id);
+            }
+          } catch (err) {
+            console.error("Dashboard core loading failed:", err);
+          } finally {
+            setLoading(false);
+          }
+        };
+        loadAll();
+      } else {
+        // If auth loaded but no user, stop loading (DashboardRouter handles redirect)
         setLoading(false);
-      };
-      loadAll();
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchProfile = async () => {
     if (!user) return null;

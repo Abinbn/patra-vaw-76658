@@ -13,7 +13,7 @@ import {
   Plus, Users, CreditCard, BarChart3, Settings, LogOut,
   Eye, Edit3, Copy, RefreshCw, Send, AlertCircle,
   UserCheck, UserX, Link as LinkIcon, Globe, ShieldCheck, UserPlus,
-  ArrowLeft
+  ArrowLeft, FileSpreadsheet, Upload, Download, Info, Check, Trash2, ListChecks
 } from 'lucide-react';
 
 
@@ -89,6 +89,11 @@ export const CompanyDashboard: React.FC = () => {
   const [displayParameters, setDisplayParameters] = useState<string[]>([]);
   const [companyVanity, setCompanyVanity] = useState('');
   const [editingDesignation, setEditingDesignation] = useState<{ id: string, value: string } | null>(null);
+  const [showAddStaffDialog, setShowAddStaffDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [manualStaffData, setManualStaffData] = useState<Record<string, string>>({});
+  const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+  const [importStatus, setImportStatus] = useState<{ total: number, current: number } | null>(null);
 
   useEffect(() => {
     // Only proceed once auth has finished loading the session
@@ -248,6 +253,99 @@ export const CompanyDashboard: React.FC = () => {
     }
   };
 
+  const handleManualAdd = async () => {
+    if (!profile) return;
+    try {
+      const { error } = await supabase
+        .from('invited_employees')
+        .insert({
+          company_profile_id: profile.id,
+          invite_code: profile.invite_code,
+          status: 'invited',
+          data_submitted: manualStaffData,
+          designation: manualStaffData.job_title || ''
+        });
+
+      if (error) throw error;
+      toast({ title: "Staff added successfully" });
+      setShowAddStaffDialog(false);
+      setManualStaffData({});
+      fetchEmployees();
+    } catch (error: any) {
+      toast({ title: "Error adding staff", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const parseCSV = (csv: string) => {
+    const lines = csv.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const obj: any = {};
+      headers.forEach((header, index) => {
+        obj[header] = values[index];
+      });
+      results.push(obj);
+    }
+    return results;
+  };
+
+  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setIsProcessingBulk(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const data = parseCSV(text);
+        setImportStatus({ total: data.length, current: 0 });
+
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          // Map CSV headers to internal data structure
+          const submission: any = {
+            display_name: row.FullName || row.DisplayName || row.Name,
+            email: row.Email,
+            phone: row.Phone || row.Contact,
+            job_title: row.JobTitle || row.Designation || row.Role,
+            address: row.Address || row.Location,
+            bio: row.Bio || row.About
+          };
+
+          await supabase.from('invited_employees').insert({
+            company_profile_id: profile.id,
+            invite_code: profile.invite_code,
+            status: 'invited',
+            data_submitted: submission,
+            designation: submission.job_title || ''
+          });
+
+          setImportStatus(prev => prev ? { ...prev, current: i + 1 } : null);
+        }
+
+        toast({ title: "Import completed", description: `Successfully imported ${data.length} staff members.` });
+        setShowImportDialog(false);
+        fetchEmployees();
+      } catch (err: any) {
+        toast({ title: "Import failed", description: err.message, variant: "destructive" });
+      } finally {
+        setIsProcessingBulk(false);
+        setImportStatus(null);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied to clipboard", description: `${text} header is ready.` });
+  };
+
   const currentInviteLink = `${window.location.origin}/invite?id=${profile?.invite_code}`;
 
   if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
@@ -349,9 +447,13 @@ export const CompanyDashboard: React.FC = () => {
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 flex-1 sm:flex-initial">
+                  <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className="flex-1 sm:flex-initial border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Bulk Import
+                  </Button>
+                  <Button size="sm" onClick={() => setShowAddStaffDialog(true)} className="bg-indigo-600 hover:bg-indigo-700 flex-1 sm:flex-initial shadow-md">
                     <Plus className="w-4 h-4 mr-2" />
-                    Add
+                    Add Staff
                   </Button>
                 </div>
               </CardHeader>
@@ -722,6 +824,124 @@ export const CompanyDashboard: React.FC = () => {
           </TabsContent>
         </Tabs>
       </main>
+      {/* Manual Add Staff Dialog */}
+      <Dialog open={showAddStaffDialog} onOpenChange={setShowAddStaffDialog}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-indigo-600" />
+              Add New Staff Member
+            </DialogTitle>
+            <DialogDescription>
+              Manually input staff details. An invitation will be automatically recorded in your directory.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {AVAILABLE_PARAMETERS.map(param => (
+              <div key={param.id} className="space-y-2">
+                <Label htmlFor={`manual-${param.id}`} className="text-xs font-bold uppercase text-slate-500">
+                  {param.label} {param.required && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id={`manual-${param.id}`}
+                  placeholder={`Enter ${param.label.toLowerCase()}`}
+                  value={manualStaffData[param.id] || ''}
+                  onChange={(e) => setManualStaffData(prev => ({ ...prev, [param.id]: e.target.value }))}
+                  className="bg-slate-50 border-none h-11"
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowAddStaffDialog(false)}>Cancel</Button>
+            <Button onClick={handleManualAdd} className="bg-indigo-600 hover:bg-indigo-700">Add to Directory</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+              <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
+              Bulk CSV Import
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              Upload a CSV file to add multiple staff members at once. Ensure your column titles match the required format.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-amber-800 font-bold">
+              <Info className="w-5 h-5" />
+              Required Column Titles
+            </div>
+            <p className="text-sm text-amber-700 leading-relaxed">
+              For the most accurate import, please use the exact column titles listed below in the first row of your sheet.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                { title: 'FullName', desc: 'Complete name of the staff member' },
+                { title: 'Email', desc: 'Corporate or personal email address' },
+                { title: 'Phone', desc: 'Contact number with country code' },
+                { title: 'JobTitle', desc: 'Official designation/role in company' },
+                { title: 'Address', desc: 'Full office or residential address' },
+                { title: 'Bio', desc: 'Short professional biography' }
+              ].map(item => (
+                <div key={item.title} className="bg-white/50 border border-amber-200/50 rounded-xl p-3 flex items-center justify-between group hover:bg-white transition-all">
+                  <div>
+                    <code className="text-indigo-700 font-black text-sm">{item.title}</code>
+                    <p className="text-[10px] text-amber-600 font-medium">{item.desc}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(item.title)}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-4 bg-slate-50/50">
+            {isProcessingBulk ? (
+              <div className="space-y-4">
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-900">Importing Data...</p>
+                  <p className="text-xs text-slate-500">Processed {importStatus?.current} of {importStatus?.total} records</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                  <Upload className="w-8 h-8 text-slate-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-900">Select CSV File</p>
+                  <p className="text-xs text-slate-500">Upload your staff data sheet to begin processing</p>
+                </div>
+                <Button className="relative overflow-hidden bg-indigo-600 hover:bg-indigo-700">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Browse Files
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    accept=".csv"
+                    onChange={handleBulkImport}
+                  />
+                </Button>
+              </>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <p className="text-[11px] text-slate-400 italic flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> All data is encrypted and saved to your secure cloud.
+            </p>
+            <Button variant="ghost" onClick={() => setShowImportDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

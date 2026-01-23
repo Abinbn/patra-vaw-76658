@@ -230,139 +230,144 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     </html>
   `;
 
-    return (
-      <div className={cn(
-        "flex flex-col border border-border rounded-lg overflow-hidden bg-background",
-        isFullscreen && "fixed inset-0 z-50 rounded-none",
-        className
-      )}>
-        {/* Toolbar */}
-        <div className="flex items-center justify-between border-b border-border bg-muted/30 p-2 gap-2 flex-wrap">
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => insertText('**', '**')} title="Bold">
-              <Bold className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('*', '*')} title="Italic">
-              <Italic className="w-4 h-4" />
-            </Button>
-            <div className="w-px h-4 bg-border mx-1" />
-            <Button variant="ghost" size="icon" onClick={() => insertText('# ')} title="Heading 1">
-              <Heading1 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('## ')} title="Heading 2">
-              <Heading2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('### ')} title="Heading 3">
-              <Heading3 className="w-4 h-4" />
-            </Button>
-            <div className="w-px h-4 bg-border mx-1" />
-            <Button variant="ghost" size="icon" onClick={() => insertText('- ')} title="Bullet List">
-              <List className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('1. ')} title="Ordered List">
-              <ListOrdered className="w-4 h-4" />
-            </Button>
-            <div className="w-px h-4 bg-border mx-1" />
-            <Button variant="ghost" size="icon" onClick={() => insertText('[', '](url)')} title="Link">
-              <LinkIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('![alt text](', ')')} title="Image">
-              <ImageIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('```\n', '\n```')} title="Code Block">
-              <Code className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('> ')} title="Quote">
-              <Quote className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => insertText('\n---\n')} title="Horizontal Rule">
-              <Minus className="w-4 h-4" />
-            </Button>
-          </div>
+    doc.open();
+    doc.write(srcDoc);
+    doc.close();
+  }, [value]);
 
-          <div className="flex items-center gap-1 ml-auto">
-            <div className="flex bg-muted rounded-md p-0.5 border border-border">
-              <Button
-                variant={viewMode === 'write' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs px-2"
-                onClick={() => setViewMode('write')}
-              >
-                <PanelLeft className="w-3 h-3 mr-1" /> Write
-              </Button>
-              <Button
-                variant={viewMode === 'split' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs px-2"
-                onClick={() => setViewMode('split')}
-              >
-                <Columns className="w-3 h-3 mr-1" /> Split
-              </Button>
-              <Button
-                variant={viewMode === 'preview' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs px-2"
-                onClick={() => setViewMode('preview')}
-              >
-                <Eye className="w-3 h-3 mr-1" /> Preview
-              </Button>
-            </div>
+  return (
+    <div className={cn(
+      "flex flex-col border border-border rounded-lg overflow-hidden bg-background",
+      isFullscreen && "fixed inset-0 z-50 rounded-none",
+      className
+    )}>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-b border-border bg-muted/30 p-2 gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => insertText('**', '**')} title="Bold">
+            <Bold className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('*', '*')} title="Italic">
+            <Italic className="w-4 h-4" />
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button variant="ghost" size="icon" onClick={() => insertText('# ')} title="Heading 1">
+            <Heading1 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('## ')} title="Heading 2">
+            <Heading2 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('### ')} title="Heading 3">
+            <Heading3 className="w-4 h-4" />
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button variant="ghost" size="icon" onClick={() => insertText('- ')} title="Bullet List">
+            <List className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('1. ')} title="Ordered List">
+            <ListOrdered className="w-4 h-4" />
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button variant="ghost" size="icon" onClick={() => insertText('[', '](url)')} title="Link">
+            <LinkIcon className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('![alt text](', ')')} title="Image">
+            <ImageIcon className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('```\n', '\n```')} title="Code Block">
+            <Code className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('> ')} title="Quote">
+            <Quote className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => insertText('\n---\n')} title="Horizontal Rule">
+            <Minus className="w-4 h-4" />
+          </Button>
+        </div>
 
+        <div className="flex items-center gap-1 ml-auto">
+          <div className="flex bg-muted rounded-md p-0.5 border border-border">
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              variant={viewMode === 'write' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => setViewMode('write')}
             >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              <PanelLeft className="w-3 h-3 mr-1" /> Write
+            </Button>
+            <Button
+              variant={viewMode === 'split' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => setViewMode('split')}
+            >
+              <Columns className="w-3 h-3 mr-1" /> Split
+            </Button>
+            <Button
+              variant={viewMode === 'preview' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => setViewMode('preview')}
+            >
+              <Eye className="w-3 h-3 mr-1" /> Preview
             </Button>
           </div>
-        </div>
 
-        {/* Editor Area */}
-        <div className="flex-1 overflow-hidden relative min-h-[500px]">
-          {viewMode === 'split' ? (
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel defaultSize={50} minSize={20}>
-                <Textarea
-                  ref={textareaRef}
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  placeholder={placeholder}
-                  className="w-full h-full p-4 resize-none border-0 focus-visible:ring-0 font-mono text-sm rounded-none"
-                />
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={50} minSize={20}>
-                <iframe
-                  ref={iframeRef}
-                  className="w-full h-full border-0 bg-white dark:bg-slate-950"
-                  title="Preview"
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          ) : viewMode === 'write' ? (
-            <Textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="w-full h-full p-4 resize-none border-0 focus-visible:ring-0 font-mono text-sm rounded-none"
-            />
-          ) : (
-            <iframe
-              ref={iframeRef}
-              className="w-full h-full border-0 bg-white dark:bg-slate-950"
-              title="Preview"
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-border bg-muted/30 p-2 text-xs text-muted-foreground flex justify-between">
-          <span>Markdown & HTML supported</span>
-          <span>{value.length} chars</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </Button>
         </div>
       </div>
-    );
-  };
+
+      {/* Editor Area */}
+      <div className="flex-1 overflow-hidden relative min-h-[500px]">
+        {viewMode === 'split' ? (
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <Textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="w-full h-full p-4 resize-none border-0 focus-visible:ring-0 font-mono text-sm rounded-none"
+              />
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <iframe
+                ref={iframeRef}
+                className="w-full h-full border-0 bg-white dark:bg-slate-950"
+                title="Preview"
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : viewMode === 'write' ? (
+          <Textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full h-full p-4 resize-none border-0 focus-visible:ring-0 font-mono text-sm rounded-none"
+          />
+        ) : (
+          <iframe
+            ref={iframeRef}
+            className="w-full h-full border-0 bg-white dark:bg-slate-950"
+            title="Preview"
+          />
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border bg-muted/30 p-2 text-xs text-muted-foreground flex justify-between">
+        <span>Markdown & HTML supported</span>
+        <span>{value.length} chars</span>
+      </div>
+    </div>
+  );
+};

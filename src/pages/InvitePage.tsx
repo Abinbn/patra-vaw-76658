@@ -350,8 +350,7 @@ export const InvitePage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-
+            
             <div className="hidden md:block opacity-40 text-[10px] uppercase tracking-widest font-bold">
                 Powered by Patra Digital Intelligence
             </div>
@@ -510,6 +509,6 @@ export const InvitePage: React.FC = () => {
             </Card>
         </div>
     </div>
-        </div >
+        </div>
     );
 };

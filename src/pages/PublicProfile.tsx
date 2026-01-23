@@ -126,6 +126,8 @@ export const PublicProfile: React.FC = () => {
 
         // Fetch corporate info if this is a company-specific link or if user has a membership
         const profileData = Array.isArray(card.profiles) ? card.profiles[0] : card.profiles;
+        let displayParams: string[] | undefined;
+
         if (profileData?.id) {
           const { data: membership } = await supabase
             .from('invited_employees')
@@ -141,8 +143,6 @@ export const PublicProfile: React.FC = () => {
             .eq('employee_user_id', card.owner_user_id)
             .eq('is_approved', true)
             .maybeSingle();
-
-          let displayParams: string[] | undefined;
 
           if (membership) {
             const companyInfo = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles;

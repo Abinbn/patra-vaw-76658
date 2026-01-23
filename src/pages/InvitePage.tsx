@@ -3,512 +3,394 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { 
+    Loader2, 
+    Building2, 
+    MapPin, 
+    Globe, 
+    UserPlus, 
+    ArrowRight, 
+    CheckCircle2, 
+    AlertCircle,
+    Info,
+    Mail,
+    Phone,
+    ShieldCheck
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Building2, UserPlus, ArrowRight, Loader2, CheckCircle2, Upload, User, Globe, Mail, Phone, Info, AlertTriangle, ShieldCheck, ChevronRight, ChevronLeft, MapPin } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 export const InvitePage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const inviteId = searchParams.get('id');
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
-
-    const [company, setCompany] = useState<any>(null);
+    
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [joined, setJoined] = useState(false);
-    const [formData, setFormData] = useState<Record<string, string>>({});
-    const [userProfiles, setUserProfiles] = useState<any[]>([]);
-    const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-    const [entryMode, setEntryMode] = useState<'selection' | 'manual'>('selection');
-    const [isUploading, setIsUploading] = useState(false);
+    const [joining, setJoining] = useState(false);
+    const [company, setCompany] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+
+    // Form states for joining
+    const [selectedCard, setSelectedCard] = useState<string>('');
+    const [userCards, setUserCards] = useState<any[]>([]);
 
     useEffect(() => {
         if (inviteId) {
             fetchCompanyInfo();
         } else {
+            setError('Missing invitation code.');
             setLoading(false);
         }
     }, [inviteId]);
 
     useEffect(() => {
         if (user) {
-            fetchUserProfiles();
+            fetchUserCards();
         }
     }, [user]);
 
-    const fetchUserProfiles = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('digital_cards')
-                .select('*')
-                .eq('owner_user_id', user!.id);
-
-            if (error) throw error;
-            setUserProfiles(data || []);
-            if (data && data.length > 0) {
-                setEntryMode('selection');
-            } else {
-                setEntryMode('manual');
-            }
-        } catch (err) {
-            console.error('Error fetching user profiles:', err);
-        }
-    };
-
     const fetchCompanyInfo = async () => {
         try {
+            setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, company_name, company_logo_url, invite_parameters, email, phone, vanity_url, bio, address, location_coordinates')
+                .select('id, company_name, company_logo_url, bio, address, location_coordinates, vanity_url, email, phone')
                 .eq('invite_code', inviteId)
                 .maybeSingle();
 
             if (error) throw error;
-
             if (!data) {
-                throw new Error('Company not found');
+                setError('Invalid or expired invitation code.');
+            } else {
+                setCompany(data);
             }
-
-            setCompany(data);
-
-            // Initialize form data based on parameters
-            const params = Array.isArray(data.invite_parameters)
-                ? data.invite_parameters as string[]
-                : ['display_name', 'email', 'phone', 'job_title'];
-
-            const initialData: Record<string, string> = {
-                'avatar_url': ''
-            };
-            params.forEach(p => {
-                initialData[p] = '';
-            });
-            setFormData(initialData);
-
-        } catch (error: any) {
-            console.error('Error fetching company:', error);
-            toast({
-                title: "Invalid Invite",
-                description: "This invite link is invalid or has expired.",
-                variant: "destructive"
-            });
+        } catch (err) {
+            console.error('Error fetching company info:', err);
+            setError('Failed to load invitation details.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleProfileSelect = (card: any) => {
-        setSelectedProfileId(card.id);
-        const content = card.content_json || {};
-        const newFormData = { ...formData };
-
-        // Map common fields from profile
-        if (content.fullName) newFormData['display_name'] = content.fullName;
-        if (content.email) newFormData['email'] = content.email;
-        if (content.phone) newFormData['phone'] = content.phone;
-        if (content.jobTitle) newFormData['job_title'] = content.jobTitle;
-        if (content.avatarUrl) newFormData['avatar_url'] = content.avatarUrl;
-
-        setFormData(newFormData);
-    };
-
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !user) return;
-
-        setIsUploading(true);
+    const fetchUserCards = async () => {
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-            const filePath = `avatars/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('card-assets')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('card-assets')
-                .getPublicUrl(filePath);
-
-            setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
-            toast({ title: "Avatar uploaded successfully" });
-        } catch (error: any) {
-            toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-        } finally {
-            setIsUploading(false);
+            const { data, error } = await supabase
+                .from('digital_cards')
+                .select('id, title, content_json')
+                .eq('owner_user_id', user!.id);
+            
+            if (error) throw error;
+            setUserCards(data || []);
+            if (data && data.length > 0) {
+                setSelectedCard(data[0].id);
+            }
+        } catch (err) {
+            console.error('Error fetching user cards:', err);
         }
-    };
-
-    const handleInputChange = (key: string, value: string) => {
-        setFormData(prev => ({ ...prev, [key]: value }));
     };
 
     const handleJoin = async () => {
         if (!user) {
-            // Store invite info in session storage to resume after login
-            sessionStorage.setItem('pending_invite_id', inviteId || '');
-            sessionStorage.setItem('pending_invite_data', JSON.stringify(formData));
-            navigate('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search));
+            // Redirect to auth with return path
+            navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
 
-        setSubmitting(true);
-        try {
-            // Check if already a member
-            const { data: existing } = await supabase
-                .from('invited_employees')
-                .select('*')
-                .eq('company_profile_id', company.id)
-                .eq('actual_user_id', user.id)
-                .maybeSingle();
-
-            if (existing) {
-                toast({
-                    title: "Already Joined",
-                    description: "You have already joined this company.",
-                });
-                setJoined(true);
-                return;
-            }
-
-            // Get user's profile ID
-            const { data: userProfile } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-
-            // Database will auto-generate employee_display_id and profile_display_id via trigger
-            const { error } = await supabase
-                .from('invited_employees')
-                .insert({
-                    company_profile_id: company.id,
-                    actual_user_id: user.id,
-                    employee_profile_id: userProfile?.id,
-                    invite_code: inviteId!,
-                    status: 'joined',
-                    data_submitted: formData,
-                    joined_at: new Date().toISOString()
-                });
-
-            if (error) throw error;
-
+        if (userCards.length === 0) {
             toast({
-                title: "Success!",
+                title: "No Digital Card Found",
+                description: "Please create a digital card first to join the company.",
+                variant: "destructive"
+            });
+            navigate('/editor');
+            return;
+        }
+
+        setJoining(true);
+        try {
+            // Logic to join company: 
+            // Usually this means updating the digital card's company info or linking to company_id
+            // For now, let's assume we update the selected card's company field
+            
+            const { error: updateError } = await supabase
+                .from('digital_cards')
+                .update({
+                    company_id: company.id,
+                    // We might also want to mark it as a corporate card if that's a thing
+                })
+                .eq('id', selectedCard);
+
+            if (updateError) throw updateError;
+
+            setSuccess(true);
+            toast({
+                title: "Welcome to the team!",
                 description: `You have successfully joined ${company.company_name}.`,
             });
-            setJoined(true);
+            
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 2000);
 
-        } catch (error: any) {
-            console.error('Error joining company:', error);
+        } catch (err) {
+            console.error('Error joining company:', err);
             toast({
                 title: "Error",
-                description: "Failed to join company. Please try again.",
+                description: "Failed to join the company. Please try again.",
                 variant: "destructive"
             });
         } finally {
-            setSubmitting(false);
+            setJoining(false);
         }
     };
 
     if (loading || authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
+                    <div className="w-16 h-16 bg-indigo-600/10 rounded-2xl flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                    </div>
+                    <p className="text-slate-500 font-medium animate-pulse">Verifying Invitation...</p>
+                </div>
             </div>
         );
     }
 
-    if (!inviteId || !company) {
+    if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-                <Card className="max-w-md w-full text-center p-8">
-                    <Building2 className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                    <CardTitle className="text-2xl mb-2">Invalid Invite</CardTitle>
-                    <CardDescription>
-                        The invite link you followed is invalid or has expired. Please contact your company administrator for a new link.
-                    </CardDescription>
-                    <Button className="mt-6 w-full" onClick={() => navigate('/')}>
-                        Go Back Home
-                    </Button>
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+                <Card className="max-w-md w-full border-none shadow-2xl shadow-indigo-200/50 rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300">
+                    <CardContent className="p-8 text-center space-y-6">
+                        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-bold text-slate-900">Invitation Error</h1>
+                            <p className="text-slate-500">{error}</p>
+                        </div>
+                        <Button 
+                            className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold transition-all"
+                            onClick={() => navigate('/')}
+                        >
+                            Return Home
+                        </Button>
+                    </CardContent>
                 </Card>
             </div>
         );
     }
 
-    if (joined) {
+    if (success) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-                <Card className="max-w-md w-full text-center p-8 border-green-100 bg-green-50/30">
-                    <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
-                    <CardTitle className="text-2xl mb-2">Welcome to {company.company_name}!</CardTitle>
-                    <CardDescription>
-                        Your request to join has been submitted. You can now access your corporate features in your dashboard.
-                    </CardDescription>
-                    <Button className="mt-6 w-full" onClick={() => navigate('/dashboard')}>
-                        Go to Dashboard
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+                <Card className="max-w-md w-full border-none shadow-2xl shadow-indigo-200/50 rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300">
+                    <CardContent className="p-8 text-center space-y-6">
+                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto">
+                            <CheckCircle2 className="w-10 h-10 text-green-500" />
+                        </div>
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-bold text-slate-900">Successfully Joined!</h1>
+                            <p className="text-slate-500 text-lg">You are now part of <span className="font-semibold text-slate-900">{company.company_name}</span>.</p>
+                        </div>
+                        <p className="text-sm text-slate-400">Redirecting to your dashboard...</p>
+                    </CardContent>
                 </Card>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row h-screen overflow-hidden">
-            {/* Left Side: Company Info */}
-            <div className="w-full md:w-5/12 lg:w-4/12 bg-white md:bg-slate-900 md:text-white p-6 md:p-12 flex flex-col justify-between overflow-y-auto">
-                <div className="space-y-8 animate-in fade-in slide-in-from-left duration-700">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full md:text-white md:hover:bg-white/10"
-                            onClick={() => navigate(-1)}
-                        >
-                            <ChevronLeft className="w-6 h-6" />
-                        </Button>
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-6 h-6 text-indigo-500" />
-                            <span className="font-black tracking-tighter text-xl">PATRA</span>
-                        </div>
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row">
+            {/* Design Sidebar / Decorative side */}
+            <div className="hidden lg:flex lg:w-1/2 bg-indigo-600 relative overflow-hidden items-center justify-center p-12">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-400 rounded-full blur-[120px]" />
+                </div>
+                
+                <div className="relative z-10 max-w-lg space-y-8 text-white">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center ring-1 ring-white/30">
+                        <ShieldCheck className="w-8 h-8 text-white" />
                     </div>
-
-                    <div className="space-y-6">
-                        {company.company_logo_url ? (
-                            <img src={company.company_logo_url} alt={company.company_name} className="h-24 w-24 object-contain bg-white rounded-2xl p-2 shadow-xl" />
-                        ) : (
-                            <div className="w-24 h-24 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
-                                <Building2 className="w-12 h-12 text-white" />
-                            </div>
-                        )}
-
-                        <div>
-                            <h1 className="text-4xl font-black tracking-tight leading-none mb-4">{company.company_name}</h1>
-                            <div className="flex flex-wrap gap-4 text-sm opacity-80">
-                                {company.email && (
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4" />
-                                        {company.email}
-                                    </div>
-                                )}
-                                {company.phone && (
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="w-4 h-4" />
-                                        {company.phone}
-                                    </div>
-                                )}
-                                {company.vanity_url && (
-                                    <div className="flex items-center gap-2">
-                                        <Globe className="w-4 h-4" />
-                                        patra.id/{company.vanity_url}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                    <div className="space-y-4">
+                        <h1 className="text-5xl font-black tracking-tight leading-tight">
+                            Build Your Professional <span className="text-indigo-200">Network</span> Today.
+                        </h1>
+                        <p className="text-indigo-100 text-lg leading-relaxed font-medium">
+                            Join <span className="text-white font-bold">{company.company_name}</span> and unlock a world of connected professional identity.
+                        </p>
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { label: 'Verified Profile', icon: CheckCircle2 },
+                            { label: 'Digital Card', icon: Globe },
+                            { label: 'Team Portal', icon: Building2 },
+                            { label: 'Direct Access', icon: UserPlus },
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/10">
+                                <item.icon className="w-5 h-5 text-indigo-300" />
+                                <span className="text-sm font-semibold text-white">{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
-                    {(company.bio) && (
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-12">
+                <div className="max-w-[480px] w-full space-y-8 animate-in slide-in-from-bottom-8 duration-700">
+                    {/* Header */}
+                    <div className="text-center space-y-4">
+                        <Avatar className="w-24 h-24 mx-auto border-4 border-white shadow-xl ring-1 ring-slate-100">
+                            <AvatarImage src={company.company_logo_url} />
+                            <AvatarFallback className="bg-indigo-600 text-white text-2xl font-bold">
+                                {company.company_name?.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
                         <div className="space-y-2">
-                            <p className="text-xs font-bold uppercase tracking-widest opacity-60">About Us</p>
-                            <p className="text-sm opacity-90 leading-relaxed max-w-md">
-                                {company.bio}
-                            </p>
-                        </div>
-                    )}
-
-                    {(company.address || company.location_coordinates) && (
-                        <div className="flex items-start gap-3">
-                            <MapPin className="w-5 h-5 opacity-60 mt-0.5" />
-                            <p className="text-sm opacity-90 leading-relaxed max-w-xs">
-                                {company.address || (company.location_coordinates ? `${company.location_coordinates.x}, ${company.location_coordinates.y}` : '')}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="p-6 bg-indigo-600/10 md:bg-white/5 rounded-2xl border border-indigo-500/20 backdrop-blur-sm space-y-4">
-                        <div className="flex gap-3">
-                            <Info className="w-5 h-5 text-indigo-500 shrink-0" />
-                            <div className="space-y-1">
-                                <p className="font-bold">Data Access Notice</p>
-                                <p className="text-sm opacity-70 leading-relaxed">
-                                    This company/organisation can see and manage the data you share via this invite.
-                                    {entryMode === 'selection' ? ' Selected profile data will be synchronized for your corporate ID.' : ''}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 items-center p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-                            <p className="text-[11px] font-medium text-amber-600 md:text-amber-200">
-                                If you are not intended to share your data, please report or ignore this link and don't submit your data.
-                            </p>
+                            <Badge variant="secondary" className="bg-indigo-50 text-indigo-600 border-none font-bold px-3 py-1 uppercase tracking-wider text-[10px]">Official Invitation</Badge>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Join {company.company_name}</h2>
                         </div>
                     </div>
-                </div>
-            
-            <div className="hidden md:block opacity-40 text-[10px] uppercase tracking-widest font-bold">
-                Powered by Patra Digital Intelligence
-            </div>
-        </div>
 
-            {/* Right Side: Registration Flow */ }
-    <div className="flex-1 bg-slate-50 p-6 md:p-12 overflow-y-auto">
-        <div className="max-w-xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom duration-1000">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900">Member Registration</h2>
-                    <p className="text-slate-500">Complete your profile to join the team</p>
-                </div>
-                {user && userProfiles.length > 0 && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEntryMode(entryMode === 'selection' ? 'manual' : 'selection')}
-                        className="rounded-full gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                    >
-                        {entryMode === 'selection' ? 'Fill Manually' : 'Use Existing Profile'}
-                    </Button>
-                )}
-            </div>
-
-            <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-3xl overflow-hidden">
-                <CardContent className="p-8 space-y-8">
-                    {entryMode === 'selection' && userProfiles.length > 0 ? (
-                        <div className="space-y-6">
-                            <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Select Profile to Use</Label>
-                            <div className="grid grid-cols-1 gap-3">
-                                {userProfiles.map(profile => (
-                                    <button
-                                        key={profile.id}
-                                        onClick={() => handleProfileSelect(profile)}
-                                        className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${selectedProfileId === profile.id
-                                            ? 'border-indigo-600 bg-indigo-50 shadow-md transform scale-[1.02]'
-                                            : 'border-slate-100 hover:border-slate-200 bg-white'
-                                            }`}
-                                    >
-                                        <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
-                                            <AvatarImage src={profile.content_json?.avatarUrl} />
-                                            <AvatarFallback><User /></AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-bold text-slate-900">{profile.title || profile.content_json?.fullName}</p>
-                                            <p className="text-xs text-slate-500 capitalize">{profile.content_json?.jobTitle || 'No Title'}</p>
-                                        </div>
-                                        {selectedProfileId === profile.id && (
-                                            <div className="ml-auto bg-indigo-600 rounded-full p-1">
-                                                <CheckCircle2 className="w-4 h-4 text-white" />
-                                            </div>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {selectedProfileId && (
-                                <div className="pt-4 border-t border-slate-100 animate-in slide-in-from-top-2">
-                                    <p className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">Syncing following data:</p>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        {Object.entries(formData).filter(([k]) => k !== 'avatar_url').map(([key, val]) => (
-                                            <div key={key} className="space-y-1">
-                                                <span className="text-slate-400 capitalize text-[10px] font-black">{key.replace(/_/g, ' ')}</span>
-                                                <p className="font-semibold text-slate-700 truncate">{val || '—'}</p>
-                                            </div>
-                                        ))}
+                    {/* Company Info Card */}
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-[2rem] overflow-hidden">
+                        <CardContent className="p-8 space-y-6">
+                            {company.bio && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-slate-400 mb-1">
+                                        <Info className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] uppercase font-bold tracking-widest">About the Company</span>
                                     </div>
+                                    <p className="text-slate-600 text-sm leading-relaxed italic">
+                                        "{company.bio}"
+                                    </p>
                                 </div>
                             )}
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Avatar Upload Section */}
-                            <div className="flex flex-col items-center gap-4 pb-6 border-b border-slate-100">
-                                <div className="relative group">
-                                    <Avatar className="w-24 h-24 border-4 border-white shadow-xl">
-                                        <AvatarImage src={formData['avatar_url']} />
-                                        <AvatarFallback className="bg-slate-100 text-slate-400">
-                                            <User size={40} />
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                                        <Upload size={20} />
-                                        <input type="file" className="hidden" onChange={handleAvatarUpload} accept="image/*" />
-                                    </label>
-                                </div>
-                                <div className="text-center">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="relative overflow-hidden group"
-                                        disabled={isUploading}
-                                    >
-                                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                                        Upload Avatar
-                                        <input
-                                            type="file"
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                            onChange={handleAvatarUpload}
-                                            accept="image/*"
-                                        />
-                                    </Button>
-                                    <p className="text-[10px] text-slate-400 mt-2">Max 5MB. Jpeg, Png or Webp</p>
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {Object.keys(formData).filter(k => k !== 'avatar_url').map(key => (
-                                    <div key={key} className="space-y-2">
-                                        <Label htmlFor={key} className="text-xs font-black uppercase text-slate-400 tracking-tighter">
-                                            {key.replace(/_/g, ' ')}
-                                        </Label>
-                                        <Input
-                                            id={key}
-                                            value={formData[key]}
-                                            onChange={(e) => handleInputChange(key, e.target.value)}
-                                            placeholder={`Enter your ${key.replace(/_/g, ' ')}`}
-                                            className="h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-indigo-500"
-                                        />
+                            <div className="space-y-4 pt-4 border-t border-slate-50">
+                                {company.address && (
+                                    <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl">
+                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0">
+                                            <MapPin className="w-5 h-5 text-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Location</p>
+                                            <p className="text-sm font-semibold text-slate-700">{company.address}</p>
+                                        </div>
                                     </div>
-                                ))}
+                                )}
+
+                                {company.vanity_url && (
+                                    <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl">
+                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0">
+                                            <Globe className="w-5 h-5 text-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Corporate Portal</p>
+                                            <p className="text-sm font-semibold text-slate-700">patra.app/{company.vanity_url}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="pt-4">
-                                <Label className="text-xs font-black uppercase text-slate-400 tracking-tighter">Avatar URL (Optional)</Label>
-                                <Input
-                                    value={formData['avatar_url']}
-                                    onChange={(e) => handleInputChange('avatar_url', e.target.value)}
-                                    placeholder="https://example.com/photo.jpg"
-                                    className="h-10 mt-1 bg-slate-50 border-none rounded-lg text-xs"
-                                />
+                            <div className="p-6 bg-indigo-600 rounded-3xl text-white space-y-4 shadow-lg shadow-indigo-200">
+                                <div className="space-y-1">
+                                    <h3 className="font-bold">Next Steps</h3>
+                                    <p className="text-indigo-100 text-xs">By joining, you'll be able to display your company affiliation on your digital card.</p>
+                                </div>
+                                
+                                {!user ? (
+                                    <Button 
+                                        className="w-full bg-white text-indigo-600 hover:bg-indigo-50 h-12 rounded-xl font-bold"
+                                        onClick={handleJoin}
+                                    >
+                                        Sign In to Join Team
+                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white text-xs font-bold opacity-80 uppercase tracking-widest">Select Your Digital Card</Label>
+                                            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {userCards.length > 0 ? (
+                                                    userCards.map(card => (
+                                                        <button 
+                                                            key={card.id}
+                                                            onClick={() => setSelectedCard(card.id)}
+                                                            className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                                                                selectedCard === card.id 
+                                                                ? 'bg-white/20 border-white text-white' 
+                                                                : 'bg-white/5 border-transparent text-indigo-100 hover:bg-white/10'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-2 h-2 rounded-full ${selectedCard === card.id ? 'bg-white' : 'bg-transparent border border-white/50'}`} />
+                                                                <span className="text-sm font-bold truncate max-w-[180px]">{card.title}</span>
+                                                            </div>
+                                                            {selectedCard === card.id && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-sm italic opacity-80">You don't have any digital cards yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <Button 
+                                            className="w-full bg-white text-indigo-600 hover:bg-indigo-50 h-12 rounded-xl font-bold shadow-sm"
+                                            onClick={handleJoin}
+                                            disabled={joining || (userCards.length === 0)}
+                                        >
+                                            {joining ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                'Confirm & Join Team'
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        </CardContent>
+                    </Card>
 
-                    <Button
-                        className={`w-full h-14 text-lg font-black shadow-xl rounded-2xl transition-all transform hover:scale-[1.01] active:scale-[0.98] ${joined ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'
-                            }`}
-                        onClick={handleJoin}
-                        disabled={submitting || isUploading || (entryMode === 'selection' && !selectedProfileId)}
-                    >
-                        {submitting ? (
-                            <>
-                                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                                Finalizing Registration...
-                            </>
-                        ) : (
-                            <>
-                                {user ? 'Complete & Join Team' : 'Sign in to Join Team'}
-                                <ArrowRight className="w-5 h-5 ml-3" />
-                            </>
-                        )}
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-    </div>
+                    {/* Footer / Help */}
+                    <div className="text-center pb-8">
+                        <p className="text-slate-400 text-xs">
+                            Invitation from <span className="font-bold text-slate-500">{company.company_name}</span>. 
+                            Verified by Patra.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <style dangerouslySetInnerHTML={{ __html: `
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.5);
+                }
+            `}} />
         </div>
     );
 };
